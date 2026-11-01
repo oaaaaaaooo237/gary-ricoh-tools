@@ -148,7 +148,7 @@ public final class MainActivity extends Activity {
     ConnectionPolicy.preflight(()->{requireActivePreflight(epoch);return client.identity(expectedIdentity);},millis->{Thread.sleep(millis);requireActivePreflight(epoch);});
     String hash=EndScreenPolicy.sha256(jpeg);
     String id=UUID.randomUUID().toString();writeFile("operation-"+id+".jpg",jpeg);
-    report.put("tool","GR EndScreen Studio Android 0.11.2-preview");report.put("operation_id",id);report.put("action",factory?"upload_factory_picture":"replace_picture");report.put("model",expectedIdentity.model);report.put("firmware",expectedIdentity.firmware);report.put("preflight_samples",3);report.put("image_sha256",hash);report.put("image_bytes",jpeg.length);report.put("device_readback",false);report.put("display_verified",false);report.put("status","outcome_unknown");
+    report.put("tool","GR EndScreen Studio Android 0.11.3-preview");report.put("operation_id",id);report.put("action",factory?"upload_factory_picture":"replace_picture");report.put("model",expectedIdentity.model);report.put("firmware",expectedIdentity.firmware);report.put("preflight_samples",3);report.put("image_sha256",hash);report.put("image_bytes",jpeg.length);report.put("device_readback",false);report.put("display_verified",false);report.put("status","outcome_unknown");
     requireActivePreflight(epoch);client.requireSameNetwork();
     if(!prefs.edit().putBoolean("pending",true).putString("report",report.toString(2)).commit())throw new IOException("本地操作记录保存失败，未发送");
     attempted=true;client.upload(jpeg);accepted=true;report.put("status","camera_accepted");report.put("http_status",200);report.put("errCode",200);
