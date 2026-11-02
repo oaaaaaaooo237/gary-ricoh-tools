@@ -15,6 +15,8 @@ Windows x64 独立程序，与安卓共享机型、固件门槛及 SD 核验核�
 
 中断后重新读取相机或卡片实际状态，不沿用本地“完成”标记，也不自动重传结果未知的 Wi-Fi 操作。数据存于当前 Windows 用户的 `LocalAppData/GaryRicohTools`。
 
+窗口按屏幕可用区域打开，保留 Windows DPI 缩放；设置中可切换标准或紧凑窗口。正文13、标题17～20，较小窗口自动收紧首页间距。
+
 ## 开发
 
 ```powershell
@@ -31,3 +33,5 @@ Extract the complete portable folder and launch `GaryRicohTools.exe`. Choose shu
 Use the single image picker to import a new photo or reopen a prepared image. Crop, pan, resize or add a background; the preview decodes the final JPEG. GR IV / IV HDF 1.20 use Wi-Fi replacement with automatic preflight and a final physical-display check. GR IIIx standard / Urban / HDF 1.70 use staged SD preparation, complete camera readbacks, installation, display confirmation and cleanup. GR III supports shooting enhancements only.
 
 Enhancements use GRKit SD files. Read the new execution report and check each selected module on the camera. Interrupted tasks require external evidence before continuing; uncertain Wi-Fi requests are never retried automatically. Desktop workflows have been operated with synthetic camera/card fixtures; physical-camera execution and effects remain unverified.
+
+Windows fit the display's usable area while retaining native DPI scaling. Settings offer standard and compact sizes; smaller windows use tighter home-page spacing.

@@ -45,6 +45,6 @@ if(Test-Path "$dist/GaryRicohTools"){
  if(!$resolved.StartsWith($allowed)){throw 'Output path outside desktop dist'}
  Remove-Item -LiteralPath $resolved -Recurse -Force
 }
-& "$java/jpackage.exe" --type app-image --input "$build/input" --main-jar desktop.jar --main-class local.grworld.studio.DesktopApp --runtime-image "$build/runtime" --dest $dist --name GaryRicohTools --app-version 0.1.1 --vendor 'Gary Fun Apps' --java-options '--module-path=$APPDIR/fx' --java-options '--add-modules=javafx.controls'
+& "$java/jpackage.exe" --type app-image --input "$build/input" --main-jar desktop.jar --main-class local.grworld.studio.DesktopApp --runtime-image "$build/runtime" --dest $dist --name GaryRicohTools --app-version 0.1.2 --vendor 'Gary Fun Apps' --java-options '--module-path=$APPDIR/fx' --java-options '--add-modules=javafx.controls'
 if($LASTEXITCODE){throw 'Desktop image packaging failed'}
 Write-Output "$dist/GaryRicohTools/GaryRicohTools.exe"

@@ -19,7 +19,7 @@ final class DesktopUI {
   }
 
   static VBox box(Node... nodes) {
-    VBox b = new VBox(14, nodes);
+    VBox b = new VBox(12, nodes);
     b.setAlignment(Pos.TOP_LEFT);
     b.setFillWidth(true);
     return b;
@@ -28,7 +28,7 @@ final class DesktopUI {
   static Button button(String value, Runnable action, boolean primary) {
     Button b = new Button(value);
     b.setMaxWidth(Double.MAX_VALUE);
-    b.setMinHeight(42);
+    b.setMinHeight(38);
     b.getStyleClass().add(primary ? "primary" : "secondary");
     b.setOnAction(e -> action.run());
     return b;
@@ -49,6 +49,40 @@ final class DesktopUI {
     scene
         .getStylesheets()
         .add(Objects.requireNonNull(DesktopUI.class.getResource("/desktop.css")).toExternalForm());
+    if (scene.getWindow() != null) constrainDialog(scene.getWindow());
+    else
+      scene
+          .windowProperty()
+          .addListener(
+              (o, a, window) -> {
+                if (window != null) constrainDialog(window);
+              });
+  }
+
+  static void constrainDialog(Window window) {
+    if (!(window instanceof Stage dialog) || dialog.getOwner() == null) return;
+    dialog.addEventHandler(
+        WindowEvent.WINDOW_SHOWN,
+        event -> {
+          Window owner = dialog.getOwner();
+          Rectangle2D bounds =
+              Screen.getScreensForRectangle(
+                      owner.getX(), owner.getY(), owner.getWidth(), owner.getHeight())
+                  .stream()
+                  .findFirst()
+                  .orElse(Screen.getPrimary())
+                  .getVisualBounds();
+          dialog.setWidth(Math.min(dialog.getWidth(), bounds.getWidth() - 24));
+          dialog.setHeight(Math.min(dialog.getHeight(), bounds.getHeight() - 24));
+          dialog.setX(
+              Math.max(
+                  bounds.getMinX() + 12,
+                  Math.min(dialog.getX(), bounds.getMaxX() - dialog.getWidth() - 12)));
+          dialog.setY(
+              Math.max(
+                  bounds.getMinY() + 12,
+                  Math.min(dialog.getY(), bounds.getMaxY() - dialog.getHeight() - 12)));
+        });
   }
 
   static boolean review(Window owner, String title, String explanation, String action) {
@@ -176,11 +210,11 @@ final class DesktopUI {
 
   static BorderPane workspace(String title, Node preview, Node action) {
     VBox left = box(text(title, "section-title"), preview);
-    left.setPadding(new Insets(28));
+    left.setPadding(new Insets(22));
     VBox.setVgrow(preview, Priority.ALWAYS);
     ScrollPane rail = scroll(action);
-    rail.setPrefWidth(360);
-    rail.setMinWidth(315);
+    rail.setPrefWidth(340);
+    rail.setMinWidth(300);
     rail.getStyleClass().add("action-rail");
     BorderPane content = new BorderPane();
     content.setCenter(left);
@@ -190,7 +224,7 @@ final class DesktopUI {
 
   static VBox actions(String step, String explanation) {
     VBox v = box(text(step, "step-title"), text(explanation, "hint"));
-    v.setPadding(new Insets(28, 24, 28, 24));
+    v.setPadding(new Insets(22, 20, 22, 20));
     return v;
   }
 }

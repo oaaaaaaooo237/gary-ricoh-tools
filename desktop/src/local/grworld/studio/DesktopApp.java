@@ -13,11 +13,12 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import local.grworld.studio.spi.*;
 
 public final class DesktopApp extends Application implements FeatureHost {
-  public static final String VERSION = "0.1.1-preview";
+  public static final String VERSION = "0.1.2-preview";
   DesktopSession session;
   Stage stage;
   BorderPane shell;
@@ -134,12 +135,14 @@ public final class DesktopApp extends Application implements FeatureHost {
     progress.setVisible(false);
     progress.setManaged(false);
     shell.setBottom(new VBox(progress, feedback));
-    Scene scene = new Scene(shell, 1160, 780);
+    Scene scene = new Scene(shell, 1080, 720);
     DesktopUI.style(scene);
     stage.setTitle("Gary趣味应用 · Windows " + VERSION);
-    stage.setMinWidth(960);
-    stage.setMinHeight(680);
     stage.setScene(scene);
+    resizeWindow(1080, 720);
+    scene.widthProperty().addListener((o, a, b) -> updateDensity(scene));
+    scene.heightProperty().addListener((o, a, b) -> updateDensity(scene));
+    updateDensity(scene);
     stage.show();
     home();
     stage
@@ -165,6 +168,30 @@ public final class DesktopApp extends Application implements FeatureHost {
 
   boolean shouldMonitor() {
     return session.sessionIdentity != null || features.containsKey(active);
+  }
+
+  void resizeWindow(double width, double height) {
+    // JavaFX screen bounds are logical units and already include Windows DPI scaling.
+    Rectangle2D bounds =
+        (stage.isShowing()
+                ? Screen.getScreensForRectangle(
+                    stage.getX(), stage.getY(), stage.getWidth(), stage.getHeight())
+                : List.of(Screen.getPrimary()))
+            .stream().findFirst().orElse(Screen.getPrimary()).getVisualBounds();
+    double availableWidth = Math.max(1, bounds.getWidth() - 24);
+    double availableHeight = Math.max(1, bounds.getHeight() - 24);
+    stage.setMinWidth(Math.min(880, availableWidth));
+    stage.setMinHeight(Math.min(600, availableHeight));
+    stage.setWidth(Math.min(width, availableWidth));
+    stage.setHeight(Math.min(height, availableHeight));
+    stage.setX(bounds.getMinX() + (bounds.getWidth() - stage.getWidth()) / 2);
+    stage.setY(bounds.getMinY() + (bounds.getHeight() - stage.getHeight()) / 2);
+  }
+
+  void updateDensity(Scene scene) {
+    boolean compact = scene.getWidth() < 1000 || scene.getHeight() < 650;
+    if (compact && !shell.getStyleClass().contains("compact")) shell.getStyleClass().add("compact");
+    else if (!compact) shell.getStyleClass().remove("compact");
   }
 
   Button nav(String title, Runnable r) {
@@ -215,9 +242,9 @@ public final class DesktopApp extends Application implements FeatureHost {
       row.setAlignment(Pos.CENTER_LEFT);
       copy.setMinWidth(0);
       row.setMinWidth(0);
-      row.setMinHeight(84);
-      row.setPrefHeight(84);
-      row.setMaxHeight(84);
+      row.setMinHeight(64);
+      row.setPrefHeight(64);
+      row.setMaxHeight(Region.USE_PREF_SIZE);
       copy.setMaxHeight(Region.USE_PREF_SIZE);
       HBox.setHgrow(copy, Priority.ALWAYS);
       Label arrow = DesktopUI.text("›", "entry-arrow");
@@ -228,9 +255,9 @@ public final class DesktopApp extends Application implements FeatureHost {
       Button button = new Button();
       button.setGraphic(row);
       button.setMaxWidth(Double.MAX_VALUE);
-      button.setMinHeight(128);
-      button.setPrefHeight(128);
-      button.setMaxHeight(128);
+      button.setMinHeight(104);
+      button.setPrefHeight(104);
+      button.setMaxHeight(Region.USE_PREF_SIZE);
       button.getStyleClass().add("home-entry");
       button.setAccessibleText(f.title());
       // A graphic's preferred height must use the available width, rather than
@@ -405,20 +432,8 @@ public final class DesktopApp extends Application implements FeatureHost {
             DesktopUI.button("重新检测相机", this::refreshDevice, false),
             DesktopUI.rule(),
             DesktopUI.text("显示与记录", "step-title"),
-            DesktopUI.button(
-                "使用紧凑窗口",
-                () -> {
-                  stage.setWidth(980);
-                  stage.setHeight(700);
-                },
-                false),
-            DesktopUI.button(
-                "恢复标准窗口",
-                () -> {
-                  stage.setWidth(1160);
-                  stage.setHeight(780);
-                },
-                false),
+            DesktopUI.button("使用紧凑窗口", () -> resizeWindow(920, 640), false),
+            DesktopUI.button("恢复标准窗口", () -> resizeWindow(1080, 720), false),
             DesktopUI.button(
                 "查看本次操作记录",
                 () -> DesktopUI.longText(stage, "操作记录", session.state.toString()),
