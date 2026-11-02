@@ -201,11 +201,45 @@ final class DesktopUI {
     ComboBox<Path> c = new ComboBox<>();
     c.setMaxWidth(Double.MAX_VALUE);
     c.setPromptText("选择读卡器中的 SD 卡");
-    if (app.session.fixtureRoot != null) {
-      c.getItems().add(app.session.fixtureRoot.resolve("card"));
+    ListCell<Path> display =
+        new ListCell<>() {
+          @Override
+          protected void updateItem(Path path, boolean empty) {
+            super.updateItem(path, empty);
+            setText(path == null ? c.getPromptText() : path.toString());
+            setGraphic(null);
+          }
+        };
+    c.setButtonCell(display);
+    c.promptTextProperty()
+        .addListener(
+            (o, a, prompt) -> {
+              if (c.getValue() == null) display.setText(prompt);
+            });
+    c.setTooltip(new Tooltip("插拔读卡器后展开此列表，程序会重新检测存储卡。"));
+    refreshCards(c, app);
+    if (app.session.fixtureRoot != null && !c.getItems().isEmpty())
       c.getSelectionModel().selectFirst();
-    } else c.getItems().addAll(DesktopCard.volumes());
+    c.setOnShowing(e -> refreshCards(c, app));
     return c;
+  }
+
+  static void refreshCards(ComboBox<Path> cards, DesktopApp app) {
+    Path selected = cards.getValue();
+    List<Path> current;
+    try {
+      current = app.cards().volumes().stream().map(v -> Path.of(v.id())).toList();
+    } catch (Exception e) {
+      cards.getItems().clear();
+      cards.setValue(null);
+      cards.setPromptText("无法读取存储卡，重新展开重试");
+      return;
+    }
+    if (!cards.getItems().equals(current)) {
+      cards.getItems().setAll(current);
+      cards.setValue(current.contains(selected) ? selected : null);
+    }
+    cards.setPromptText(current.isEmpty() ? "未检测到存储卡，插卡后展开重试" : "选择读卡器中的 SD 卡");
   }
 
   static BorderPane workspace(String title, Node preview, Node action) {

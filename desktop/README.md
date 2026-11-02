@@ -17,6 +17,8 @@ Windows x64 独立程序，与安卓共享机型、固件门槛及 SD 核验核�
 
 窗口按屏幕可用区域打开，保留 Windows DPI 缩放；设置中可切换标准或紧凑窗口。正文13、标题17～20，较小窗口自动收紧首页间距。
 
+插拔读卡器后展开卡片列表，会重新检测可用存储卡；已断开的选择会清空，无需重开页面。
+
 ## 开发
 
 ```powershell
@@ -35,3 +37,5 @@ Use the single image picker to import a new photo or reopen a prepared image. Cr
 Enhancements use GRKit SD files. Read the new execution report and check each selected module on the camera. Interrupted tasks require external evidence before continuing; uncertain Wi-Fi requests are never retried automatically. Desktop workflows have been operated with synthetic camera/card fixtures; physical-camera execution and effects remain unverified.
 
 Windows fit the display's usable area while retaining native DPI scaling. Settings offer standard and compact sizes; smaller windows use tighter home-page spacing.
+
+Open the card selector after inserting or removing a reader to refresh available cards. Disconnected selections are cleared without restarting the page.

@@ -18,7 +18,7 @@ import javafx.stage.Stage;
 import local.grworld.studio.spi.*;
 
 public final class DesktopApp extends Application implements FeatureHost {
-  public static final String VERSION = "0.1.2-preview";
+  public static final String VERSION = "0.1.3-preview";
   DesktopSession session;
   Stage stage;
   BorderPane shell;
@@ -490,7 +490,9 @@ public final class DesktopApp extends Application implements FeatureHost {
         List<Path> paths =
             session.fixtureRoot == null
                 ? DesktopCard.volumes()
-                : List.of(session.fixtureRoot.resolve("card"));
+                : Files.isDirectory(session.fixtureRoot.resolve("card"))
+                    ? List.of(session.fixtureRoot.resolve("card"))
+                    : List.of();
         return paths.stream().map(p -> new Volume(p.toString(), p.toString())).toList();
       }
 

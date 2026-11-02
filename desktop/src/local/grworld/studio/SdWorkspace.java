@@ -239,7 +239,7 @@ final class SdWorkspace {
   ComboBox<Path> cardBox() {
     ComboBox<Path> cards = DesktopUI.cards(app);
     if (cardPath != null && cards.getItems().contains(cardPath)) cards.setValue(cardPath);
-    if (cardPath == null) cardPath = cards.getValue();
+    cardPath = cards.getValue();
     cards.setOnAction(e -> cardPath = cards.getValue());
     return cards;
   }

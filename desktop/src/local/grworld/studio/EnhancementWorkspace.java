@@ -141,7 +141,7 @@ final class EnhancementWorkspace {
     ComboBox<Path> cards = DesktopUI.cards(app);
     if (cardPath != null && cards.getItems().contains(cardPath)) cards.setValue(cardPath);
     cards.setOnAction(e -> cardPath = cards.getValue());
-    if (cardPath == null) cardPath = cards.getValue();
+    cardPath = cards.getValue();
     if (!has || configuring) {
       CheckBox f = new CheckBox("XPan 宽幅 · 65:24"), g = new CheckBox("构图辅助线");
       f.setSelected(framing);
