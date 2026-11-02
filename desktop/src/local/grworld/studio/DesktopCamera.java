@@ -9,7 +9,7 @@ import java.util.*;
 import local.grworld.studio.spi.CameraTransport;
 import org.json.JSONObject;
 
-final class DesktopCamera implements CameraTransport {
+class DesktopCamera implements CameraTransport {
   record Adapter(String name, Inet4Address address, int index) {
     public String toString() {
       return name + " · " + address.getHostAddress();

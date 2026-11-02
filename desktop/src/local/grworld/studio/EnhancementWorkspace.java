@@ -13,9 +13,15 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 
 final class EnhancementWorkspace {
+  static final String CAMERA_STEPS =
+      "1. 在电脑安全弹出 SD 卡，将卡放回相机。\n\n"
+          + "2. 首次启用时，按住 MENU 开机，等待相机自动关机，再正常开机。\n\n"
+          + "3. 等待 GRKit 加载，在 ADJ 第六项 GRK 中选择已安装模块。胶片风格、日期格式与位置在 GRK / Fn 菜单设置。\n\n"
+          + "4. 实际查看取景并试拍。之后把卡接回电脑，读取运行报告并核对效果。";
   final DesktopApp app;
   final DesktopSession s;
-  boolean framing = true, guides = true, configuring;
+  boolean framing = true, guides = true, film, date, configuring;
+  final Set<String> selectedEffects = new TreeSet<>();
   Path cardPath;
   String style = "三分线", lineColor = "白色", mask = "半透明遮幅";
   double opacity = 1;
@@ -31,6 +37,11 @@ final class EnhancementWorkspace {
     if (has && !configuring) {
       framing = Boolean.parseBoolean(s.state.getProperty("enh.f"));
       guides = Boolean.parseBoolean(s.state.getProperty("enh.g"));
+      film = Boolean.parseBoolean(s.state.getProperty("enh.film", "false"));
+      date = Boolean.parseBoolean(s.state.getProperty("enh.date", "false"));
+      selectedEffects.clear();
+      String names = s.state.getProperty("enh.effects", "");
+      if (!names.isEmpty()) selectedEffects.addAll(Arrays.asList(names.split(",")));
     }
     VBox photo = new VBox(18);
     Canvas canvas = new Canvas(650, 390);
@@ -47,9 +58,8 @@ final class EnhancementWorkspace {
         .getChildren()
         .addAll(well, DesktopUI.text("构图示意，非相机实时取景。实际比例、线型与开关在相机 GRK / Fn 菜单设置。", "hint"));
     VBox.setVgrow(well, Priority.ALWAYS);
-    TitledPane options = new TitledPane();
-    options.setText("调整示意样式");
-    options.setExpanded(false);
+    VBox options = new VBox(10);
+    options.getChildren().add(DesktopUI.text("调整示意样式", "body"));
     ComboBox<String> lines = new ComboBox<>();
     lines.getItems().addAll("三分线", "中心十字", "黄金分割", "对角线", "三分＋中心");
     lines.setValue(style);
@@ -60,6 +70,17 @@ final class EnhancementWorkspace {
     masks.getItems().addAll("半透明遮幅", "黑色遮幅", "仅框线");
     masks.setValue(mask);
     Slider alpha = new Slider(.5, 1, opacity);
+    alpha.setAccessibleText("示意图辅助线透明度，50% 至 100%");
+    alpha.setDisable(!guides);
+    Label alphaValue = new Label();
+    alphaValue
+        .textProperty()
+        .bind(
+            javafx.beans.binding.Bindings.format(
+                java.util.Locale.ROOT, "%.0f%%", alpha.valueProperty().multiply(100)));
+    Region alphaSpace = new Region();
+    HBox.setHgrow(alphaSpace, Priority.ALWAYS);
+    HBox alphaHeading = new HBox(10, DesktopUI.text("辅助线透明度", "hint"), alphaSpace, alphaValue);
     lines.setOnAction(
         e -> {
           style = lines.getValue();
@@ -82,7 +103,7 @@ final class EnhancementWorkspace {
               opacity = b.doubleValue();
               draw.run();
             });
-    options.setContent(DesktopUI.box(new HBox(12, lines, colors, masks), alpha));
+    options.getChildren().addAll(new HBox(12, lines, colors, masks), alphaHeading, alpha);
     photo.getChildren().add(options);
     draw.run();
     boolean matched = has && id != null && id.same(s.enhIdentity());
@@ -98,7 +119,7 @@ final class EnhancementWorkspace {
                         : !s.enhReportChecked ? "在相机执行并读回" : complete() ? "本轮核对完成" : "核对实际拍摄效果";
     String note =
         !supported
-            ? "电脑连接相机 Wi-Fi 后，程序识别实际型号与固件；识别合格再准备。"
+            ? "先连接相机识别型号和固件；GR IV HDF 1.20 也可用 USB 只读识别。识别合格再准备 SD 卡。"
             : has && !matched
                 ? "当前记录属于 "
                     + s.enhIdentity().model
@@ -106,12 +127,11 @@ final class EnhancementWorkspace {
                     + s.enhIdentity().firmware
                     + "。请连接原相机续办，或为当前相机建立独立任务。"
                 : !has || configuring
-                    ? "选择 XPan 宽幅、辅助线或两者。共用一次 SD 准备，日常在相机菜单切换。"
+                    ? "选择需要的模块，共用一次 SD 准备。胶片风格与日期样式在相机 GRK / Fn 菜单切换。"
                     : !s.enhCardChecked
                         ? "请读取原任务的实际 SD 卡，核实文件与本轮运行报告。本地记录不能代替相机执行结果。"
                         : !s.enhReportChecked
-                            ? "安全弹出卡并放回相机。首次按住 MENU 开机，等待自动关机后正常开机。等待 GRKit 加载，在 ADJ 第六项 GRK"
-                                + " 设置模块，之后把卡接回电脑读报告。"
+                            ? CAMERA_STEPS
                             : complete()
                                 ? "卡文件与本轮报告已核对；实际显示与试拍结果由你记录为正确。"
                                 : "请实际查看相机取景和试拍结果，分别记录已选模块的显示。报告通过不等于实际效果已确认。";
@@ -143,9 +163,14 @@ final class EnhancementWorkspace {
     cards.setOnAction(e -> cardPath = cards.getValue());
     cardPath = cards.getValue();
     if (!has || configuring) {
-      CheckBox f = new CheckBox("XPan 宽幅 · 65:24"), g = new CheckBox("构图辅助线");
+      CheckBox f = new CheckBox("XPan 宽幅 · 65:24"),
+          g = new CheckBox("构图辅助线"),
+          filmBox = new CheckBox("胶片模拟"),
+          dateBox = new CheckBox("日期打印");
       f.setSelected(framing);
       g.setSelected(guides);
+      filmBox.setSelected(film);
+      dateBox.setSelected(date);
       f.setOnAction(
           e -> {
             framing = f.isSelected();
@@ -156,11 +181,55 @@ final class EnhancementWorkspace {
             guides = g.isSelected();
             draw.run();
           });
-      rail.getChildren().addAll(f, g, cards);
+      filmBox.setOnAction(e -> film = filmBox.isSelected());
+      dateBox.setOnAction(
+          e -> {
+            date = dateBox.isSelected();
+            draw.run();
+          });
+      Button looks =
+          DesktopUI.button(
+              "选择胶片风格／导入滤镜",
+              () -> {
+                CameraIdentity live = s.context();
+                if (live == null || !live.enhancementSupported()) {
+                  app.notifyUser("先识别适用相机，再选择胶片库。");
+                  return;
+                }
+                new EffectPicker(
+                        app,
+                        live,
+                        selectedEffects,
+                        names -> {
+                          selectedEffects.clear();
+                          selectedEffects.addAll(names);
+                          film = true;
+                          app.render();
+                        })
+                    .show();
+              },
+              false);
+      looks.setDisable(!supported);
+      VBox filmOptions =
+          DesktopUI.box(
+              DesktopUI.text("已选 " + selectedEffects.size() + " 个风格；在这里选择内置胶片或导入自己的滤镜。", "hint"),
+              looks);
+      filmOptions.visibleProperty().bind(filmBox.selectedProperty());
+      filmOptions.managedProperty().bind(filmBox.selectedProperty());
+      VBox dateOptions =
+          DesktopUI.box(DesktopUI.text("把日期印到照片上。支持经典数字、GR1s 点阵和 GR II 风格；格式与竖拍位置在机内设置。", "hint"));
+      dateOptions.visibleProperty().bind(dateBox.selectedProperty());
+      dateOptions.managedProperty().bind(dateBox.selectedProperty());
+      rail.getChildren().addAll(f, g, filmBox, filmOptions, dateBox, dateOptions, cards);
       Button prepare = DesktopUI.button("准备到 SD 卡", () -> prepare(false), true);
-      prepare.setDisable(!supported);
+      prepare
+          .disableProperty()
+          .bind(
+              javafx.beans.binding.Bindings.createBooleanBinding(
+                  () -> !supported || (filmBox.isSelected() && selectedEffects.isEmpty()),
+                  filmBox.selectedProperty()));
       Button manual = DesktopUI.button("系统无法写卡？手动导出 ZIP", this::manual, false);
-      manual.setDisable(!supported);
+      manual.disableProperty().bind(prepare.disableProperty());
       rail.getChildren().addAll(prepare, manual);
     } else if (matched) {
       if (!s.enhReportChecked) {
@@ -172,6 +241,8 @@ final class EnhancementWorkspace {
       } else {
         if (framing) rail.getChildren().add(actualButton(true));
         if (guides) rail.getChildren().add(actualButton(false));
+        if (film) rail.getChildren().add(actualButton("film", "胶片模拟"));
+        if (date) rail.getChildren().add(actualButton("date", "日期打印"));
         if (complete())
           rail.getChildren().add(DesktopUI.text("后续换卡、更新或重新打开任务时，仍需读取实际卡片重新核实。", "hint"));
       }
@@ -231,17 +302,29 @@ final class EnhancementWorkspace {
       }
       g.setGlobalAlpha(1);
     }
+    if (date) {
+      g.setFill(Color.web("#f5a352"));
+      g.setFont(javafx.scene.text.Font.font(16));
+      String stamp =
+          java.time.LocalDate.now()
+              .format(java.time.format.DateTimeFormatter.ofPattern("''yy MM dd"));
+      g.fillText(stamp, x + Math.max(8, iw - 110), bottom - 16);
+    }
   }
 
   boolean complete() {
     return (!framing || s.state.getProperty("enh.actual_f", "0").equals("1"))
-        && (!guides || s.state.getProperty("enh.actual_g", "0").equals("1"));
+        && (!guides || s.state.getProperty("enh.actual_g", "0").equals("1"))
+        && (!film || s.state.getProperty("enh.actual_film", "0").equals("1"))
+        && (!date || s.state.getProperty("enh.actual_date", "0").equals("1"));
   }
 
   Node actualButton(boolean f) {
-    String key = f ? "enh.actual_f" : "enh.actual_g",
-        name = f ? "XPan 宽幅" : "构图辅助线",
-        value = s.state.getProperty(key, "0");
+    return actualButton(f ? "f" : "g", f ? "XPan 宽幅" : "构图辅助线");
+  }
+
+  Node actualButton(String module, String name) {
+    String key = "enh.actual_" + module, value = s.state.getProperty(key, "0");
     HBox answers = new HBox(10);
     for (int result : new int[] {1, 2}) {
       String label = result == 1 ? "正确" : "不正确";
@@ -252,7 +335,7 @@ final class EnhancementWorkspace {
                   app.work(
                       "记录实际效果…",
                       () -> {
-                        s.enhActual(f, result);
+                        s.enhActual(module, result);
                         return null;
                       },
                       r -> app.notifyUser("实际效果已记录。")),
@@ -270,12 +353,18 @@ final class EnhancementWorkspace {
 
   void prepare(boolean remove) {
     CameraIdentity id = s.context();
-    boolean f = framing, g = guides;
+    EnhancementSelection choice;
+    try {
+      choice = new EnhancementSelection(framing, guides, film, date, selectedEffects);
+    } catch (Exception e) {
+      app.error(e);
+      return;
+    }
     if (id == null || !id.enhancementSupported()) {
       app.notifyUser("先识别支持的相机。");
       return;
     }
-    if (!remove && !f && !g) {
+    if (!remove && choice.modules().isEmpty()) {
       app.notifyUser("至少选择一个模块。");
       return;
     }
@@ -289,7 +378,7 @@ final class EnhancementWorkspace {
         () -> {
           DesktopCard card = s.card(selected, true);
           EnhancementBundle b = s.resources.bundle(id);
-          return new Object[] {card, EnhancementDeployment.inspect(card, b, f, g, remove)};
+          return new Object[] {card, EnhancementDeployment.inspect(card, b, choice, remove)};
         },
         result -> {
           DesktopCard card = (DesktopCard) result[0];
@@ -297,19 +386,16 @@ final class EnhancementWorkspace {
           String changes =
               remove
                   ? "移除本工具所有权记录中的文件；恢复接管前模块清单，保留其他内容。"
-                  : "准备 "
-                      + (f ? "XPan 宽幅 " : "")
-                      + (g ? "构图辅助线" : "")
-                      + "。保留已有其他模块和设置，完整读回后最后提交启动入口。";
+                  : "准备 " + choice.description() + "。保留已有其他模块和设置，完整读回后最后提交启动入口。";
           if (DesktopUI.review(
               app.stage,
               remove ? "核对移除增强" : "核对准备增强",
-              id.model + " · " + id.firmware + "\nSD 卡：" + selected.getFileName() + "\n" + changes,
+              id.model + " · " + id.firmware + "\nSD 卡：" + selected + "\n" + changes,
               remove ? "移除并核验" : "确认并准备"))
             app.work(
                 remove ? "移除并核验…" : "准备增强文件…",
                 () -> {
-                  s.prepareEnh(card, id, f, g, plan);
+                  s.prepareEnh(card, id, choice, plan);
                   return null;
                 },
                 r -> {
@@ -319,8 +405,24 @@ final class EnhancementWorkspace {
                           ? "自有增强文件已移除。若不再使用任何 SD 脚本，请按管理中的关闭 Script 步骤操作。"
                           : "文件已完整核验。请在相机执行后读回报告。";
                   app.notifyUser(s.enhMessage);
+                  if (!remove) showCameraSteps();
                 });
         });
+  }
+
+  void showCameraSteps() {
+    Dialog<Void> dialog = new Dialog<>();
+    dialog.initOwner(app.stage);
+    dialog.setTitle("SD 卡已准备好 · 接下来在相机操作");
+    dialog.setHeaderText("文件已写入并核验，请按以下步骤启用");
+    Label content = DesktopUI.text(CAMERA_STEPS, "body");
+    content.setMinHeight(Region.USE_PREF_SIZE);
+    content.setPrefWidth(480);
+    dialog.getDialogPane().setContent(content);
+    dialog.getDialogPane().setPrefWidth(520);
+    dialog.getDialogPane().getButtonTypes().add(new ButtonType("确定", ButtonBar.ButtonData.OK_DONE));
+    DesktopUI.style(dialog.getDialogPane().getScene());
+    dialog.showAndWait();
   }
 
   void read(boolean copy) {
@@ -349,7 +451,7 @@ final class EnhancementWorkspace {
       app.notifyUser("先识别适用相机。");
       return;
     }
-    if (!framing && !guides) {
+    if (!framing && !guides && !film && !date) {
       app.notifyUser("至少选择一个模块。");
       return;
     }
@@ -374,15 +476,16 @@ final class EnhancementWorkspace {
                     DesktopUI.chooseSave(
                         app.stage,
                         "保存增强手动包",
-                        "GRKit-1.3.5-" + EnhancementPolicy.family(id) + "-FG.zip");
+                        "GRKit-1.3.5-" + EnhancementPolicy.family(id) + "-modules.zip");
                 if (target == null) return;
-                boolean f = framing, g = guides;
+                EnhancementSelection selectedModules =
+                    new EnhancementSelection(framing, guides, film, date, selectedEffects);
                 app.work(
                     "导出增强包…",
                     () -> {
                       s.same(id);
-                      Files.write(target, s.resources.bundle(id).manual(f, g));
-                      s.recordEnh(id, "manual", f, g, baseline, true);
+                      Files.write(target, s.resources.bundle(id).manual(selectedModules));
+                      s.recordEnh(id, "manual", selectedModules, baseline, true);
                       return null;
                     },
                     r -> {

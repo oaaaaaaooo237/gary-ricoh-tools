@@ -2,7 +2,7 @@
 
 [English](README.en.md)
 
-理光相机工具，提供安卓和 Windows 独立版：关机画面编辑与替换、原厂图片恢复、XPan 宽幅与构图辅助线。
+理光相机工具，提供安卓和 Windows 独立版：关机画面编辑与替换、原厂图片恢复、XPan 宽幅与构图辅助线。Windows 0.2.0 新增胶片模拟、日期打印与自定义滤镜导入。
 
 - Wi-Fi 换图：GR IV／GR IV HDF 1.20。
 - SD 换图：GR IIIx 普通／Urban／HDF 1.70。
@@ -16,6 +16,7 @@
 
 ```powershell
 python scripts/fetch_dependencies.py
+./desktop/prepare-effects.ps1
 ./desktop/build.ps1
 ```
 

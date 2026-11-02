@@ -18,7 +18,7 @@ import javafx.stage.Stage;
 import local.grworld.studio.spi.*;
 
 public final class DesktopApp extends Application implements FeatureHost {
-  public static final String VERSION = "0.1.3-preview";
+  public static final String VERSION = "0.2.0";
   DesktopSession session;
   Stage stage;
   BorderPane shell;
@@ -65,7 +65,7 @@ public final class DesktopApp extends Application implements FeatureHost {
                 "GaryRicohTools");
     Path fixtureRoot = fixture ? root.resolve("fixture") : null;
     if (fixtureRoot != null) Files.createDirectories(fixtureRoot.resolve("card"));
-    CameraTransport transport = fixture ? new FixtureCamera(fixtureRoot) : new DesktopCamera();
+    CameraTransport transport = fixture ? new FixtureCamera(fixtureRoot) : new DesktopUsbCamera();
     session = new DesktopSession(transport, new DesktopStore(root.resolve("tasks")), fixtureRoot);
     imageWorkspace = new ImageWorkspace(this);
     enhancementWorkspace = new EnhancementWorkspace(this);
@@ -98,7 +98,7 @@ public final class DesktopApp extends Application implements FeatureHost {
           }
 
           public String description() {
-            return "XPan 65:24 宽幅与构图辅助线，按需独立开启。";
+            return "XPan 宽幅、构图辅助线、胶片模拟、日期打印与自定义滤镜，按需选择。";
           }
 
           public Node createView(FeatureHost host) {
@@ -231,7 +231,9 @@ public final class DesktopApp extends Application implements FeatureHost {
     epoch++;
     VBox content = new VBox(20);
     content.getStyleClass().add("home");
-    Label intro = DesktopUI.text("为理光 GR4、GR4 HDF、GR3、GR3X 系列相机提供关机画面定制与恢复、XPan 宽幅和构图辅助线。", "lead");
+    Label intro =
+        DesktopUI.text(
+            "为理光 GR4、GR4 HDF、GR3、GR3X 系列相机提供关机画面定制与恢复，以及 XPan 宽幅、构图辅助线、胶片模拟、日期打印和自定义滤镜。", "lead");
     intro.setMaxWidth(850);
     content.getChildren().addAll(intro, DesktopUI.text("选择功能", "section-title"), DesktopUI.rule());
     for (FeatureModule f : features.values()) {
@@ -312,7 +314,10 @@ public final class DesktopApp extends Application implements FeatureHost {
                     + session.sessionIdentity.model
                     + " · "
                     + session.sessionIdentity.firmware
-            : actual.model + " · 固件 " + actual.firmware);
+            : actual.model
+                + " · 固件 "
+                + actual.firmware
+                + (session.network.startsWith("usb:") ? " · USB" : ""));
   }
 
   <T> void work(String label, Callable<T> action, Consumer<T> success) {

@@ -10,3 +10,5 @@ $sources=@(Get-ChildItem "$base/tests" -Recurse -Filter '*.java'|ForEach-Object 
 if($LASTEXITCODE){throw 'Diagnostic compilation failed'}
 & "$java/java.exe" --module-path "$base/dependencies" --add-modules javafx.controls -cp "$classes;$classpath" local.grworld.studio.DesktopDiagnostics
 if($LASTEXITCODE){throw 'Backend diagnostics failed; this is not visual acceptance'}
+& "$java/java.exe" --module-path "$base/dependencies" --add-modules javafx.controls -cp "$classes;$classpath" local.grworld.studio.EffectDiagnostics
+if($LASTEXITCODE){throw 'Effect diagnostics failed; this is not visual/camera acceptance'}

@@ -39,6 +39,12 @@
 .slider .thumb { -fx-background-color:#f5f5f3; }
 .dialog-pane { -fx-background-color:#181818; }
 .dialog-pane .header-panel { -fx-background-color:#181818; }
+.dialog-pane .button { -fx-background-color:#282828; -fx-text-fill:#f5f5f3; -fx-border-color:#575757; -fx-border-radius:3; -fx-background-radius:3; -fx-padding:8 14; }
+.dialog-pane .button:default,.dialog-pane .button.primary { -fx-background-color:#f5f5f3; -fx-text-fill:#161616; }
+.dialog-pane .button:focused { -fx-border-color:#f5f5f3; -fx-border-width:2; }
+.effect-list .list-cell { -fx-background-color:#222222; -fx-padding:4 8; }
+.effect-list .list-cell:selected { -fx-background-color:#414141; }
+.effect-list .list-cell:focused { -fx-border-color:#b5b5b1; -fx-border-width:1; }
 .feedback { -fx-background-color:#101010; -fx-text-fill:#d8d8d4; -fx-padding:7 24; -fx-font-size:12px; }
 .error { -fx-text-fill:#ffaaaa; }
 .success { -fx-text-fill:#71d495; }

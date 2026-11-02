@@ -8,6 +8,11 @@ public interface CameraTransport extends AutoCloseable {
 
   void upload(byte[] jpeg, String expectedNetworkKey) throws Exception;
 
+  /** Whether the current connection supports the existing image-upload route. */
+  default boolean canUpload() {
+    return true;
+  }
+
   default boolean simulated() {
     return false;
   }

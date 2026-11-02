@@ -98,14 +98,16 @@ final class ImageWorkspace {
       return v;
     }
     CameraIdentity live = s.live(), id = s.context();
-    boolean supported = live != null && live.wifiSupported();
+    boolean supported = live != null && live.wifiSupported() && s.transport.canUpload();
     String step = supported ? s.prepared == null ? "选择关机图片" : "确认最终图片" : "识别相机";
     VBox v =
         DesktopUI.actions(
             step,
             supported
                 ? "检查左侧最终 JPEG 预览。点击确认后，程序自动复核型号、固件和网络，再上传并检查接口结果。"
-                : "电脑连接相机 Wi-Fi 后，程序自动读取实际型号与固件。可先选图编辑；识别合格后才开放相机操作。");
+                : s.network.startsWith("usb:")
+                    ? "已通过 USB 只读识别相机。准备拍摄增强 SD 文件可继续使用 USB；上传关机图需要电脑连接相机 Wi-Fi。"
+                    : "电脑连接相机 Wi-Fi 后，程序自动读取实际型号与固件。可先选图编辑；识别合格后才开放相机操作。");
     if (id != null && !id.wifiSupported())
       v.getChildren().add(DesktopUI.text("此机型／固件不适用 Wi-Fi 关机图。GR3 目前仅支持拍摄增强。", "hint"));
     Button upload =

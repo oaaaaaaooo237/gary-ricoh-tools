@@ -1,13 +1,20 @@
-param([switch]$CompileOnly)
+param([switch]$CompileOnly,[string]$OutputDirectory)
 $ErrorActionPreference='Stop'
 $base=$PSScriptRoot
 $root=Split-Path $base -Parent
+$versionSource=Get-Content (Join-Path $base 'src/local/grworld/studio/DesktopApp.java') -Raw
+if($versionSource -notmatch 'public static final String VERSION = "([0-9]+\.[0-9]+\.[0-9]+)";'){throw 'Desktop version must contain three numeric components'}
+$appVersion=$Matches[1]
 $java=if($env:JAVA_HOME){Join-Path $env:JAVA_HOME 'bin'}else{Split-Path (Get-Command javac.exe).Source -Parent}
 $build=Join-Path $base 'build'
-$dist=Join-Path $base 'dist'
+$dist=if($OutputDirectory){[IO.Path]::GetFullPath($OutputDirectory)}else{Join-Path $base 'dist'}
 foreach($part in @('classes','input','input/assets','input/fx','input/legal')){New-Item -ItemType Directory -Force (Join-Path $build $part)|Out-Null}
+New-Item -ItemType Directory -Force (Join-Path $build 'input/native')|Out-Null
+$csharp=Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
+& $csharp /nologo /target:exe /platform:x64 /optimize+ /r:System.Web.Extensions.dll ("/out:"+(Join-Path $build 'input/native/UsbIdentity.exe')) (Join-Path $base 'native/UsbIdentity.cs')
+if($LASTEXITCODE){throw 'Read-only USB identity helper compilation failed'}
 & (Join-Path $base 'fetch.ps1')
-$core=@('CameraConnectionState','CameraIdentity','CameraWorkflowPolicy','ConnectionPolicy','EndScreenPolicy','EnhancementBundle','EnhancementDeployment','EnhancementPolicy','EnhancementReport','Gr3JpegEncoder','Gr3Profile','Gr3SdPolicy','Gr3SdSession','SdCardDeployment','SdCardRootPolicy','SdReconciler','WorkflowSession','WorkflowStages')
+$core=@('CameraConnectionState','CameraIdentity','CameraWorkflowPolicy','ConnectionPolicy','EndScreenPolicy','EnhancementBundle','EnhancementSelection','EnhancementDeployment','EnhancementPolicy','EnhancementReport','Gr3JpegEncoder','Gr3Profile','Gr3SdPolicy','Gr3SdSession','SdCardDeployment','SdCardRootPolicy','SdReconciler','WorkflowSession','WorkflowStages')
 $sources=@($core|ForEach-Object{Join-Path $root "app/src/local/grworld/studio/$_.java"})+@(Get-ChildItem (Join-Path $base 'src') -Recurse -Filter '*.java'|ForEach-Object FullName)
 $classpath=Join-Path $base 'dependencies/json-20250517.jar'
 $modulepath=Join-Path $base 'dependencies'
@@ -29,6 +36,17 @@ Copy-Item "$root/LICENSES/*" "$build/input/legal/"
 Copy-Item "$base/legal/*" "$build/input/legal/"
 foreach($jar in Get-ChildItem "$base/dependencies/javafx-*-win.jar"){Copy-Item $jar.FullName "$build/input/fx/"}
 Copy-Item $classpath "$build/input/json-20250517.jar"
+$converter=Join-Path $base 'dependencies/effect-converter'
+$converterHashes=@{
+ 'node.exe'='63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088'
+ 'grkit_wasm-Bv1y84tD.js'='5916ab8d11b9c4654a82ca0f52c46c1fcfb6e6f56c602c58dfd27afaad0a6f20'
+ 'grkit_wasm_bg-Ddg15dz0.wasm'='8fd19e8ce7330ab13c3b24866bdf67e51fbf1f89b47f3b0e86c2c4427fada5ad'
+}
+foreach($name in $converterHashes.Keys){if(!(Test-Path (Join-Path $converter $name)) -or (Get-FileHash (Join-Path $converter $name)).Hash.ToLowerInvariant() -ne $converterHashes[$name]){throw 'Run desktop/prepare-effects.ps1 to prepare the pinned offline converter'}}
+New-Item -ItemType Directory -Force "$build/input/converter"|Out-Null
+Get-ChildItem -LiteralPath $converter | Copy-Item -Destination "$build/input/converter" -Recurse -Force
+Copy-Item "$base/resources/import-effect.mjs" "$build/input/converter/import-effect.mjs" -Force
+Copy-Item "$converter/Node-LICENSE.txt","$converter/GRKit-THIRD_PARTY_LICENSES.txt" "$build/input/legal/" -Force
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 foreach($jar in Get-ChildItem "$base/dependencies/*.jar"){
  $zip=[IO.Compression.ZipFile]::OpenRead($jar.FullName)
@@ -39,12 +57,13 @@ $manifest="Manifest-Version: 1.0`nMain-Class: local.grworld.studio.DesktopApp`nC
 & "$java/jar.exe" --create --file "$build/input/desktop.jar" --manifest "$build/MANIFEST.MF" -C "$build/classes" . -C "$build/input" assets
 if($LASTEXITCODE){throw 'Desktop JAR failed'}
 if($CompileOnly){Write-Output "$build/input/desktop.jar";return}
+New-Item -ItemType Directory -Force $dist|Out-Null
 if(!(Test-Path "$build/runtime")){& "$java/jlink.exe" --add-modules java.se,jdk.unsupported,jdk.crypto.ec --strip-debug --no-header-files --no-man-pages --output "$build/runtime";if($LASTEXITCODE){throw 'Runtime packaging failed'}}
 if(Test-Path "$dist/GaryRicohTools"){
  $resolved=[IO.Path]::GetFullPath("$dist/GaryRicohTools");$allowed=[IO.Path]::GetFullPath($dist)+[IO.Path]::DirectorySeparatorChar
  if(!$resolved.StartsWith($allowed)){throw 'Output path outside desktop dist'}
  Remove-Item -LiteralPath $resolved -Recurse -Force
 }
-& "$java/jpackage.exe" --type app-image --input "$build/input" --main-jar desktop.jar --main-class local.grworld.studio.DesktopApp --runtime-image "$build/runtime" --dest $dist --name GaryRicohTools --app-version 0.1.3 --vendor 'Gary Fun Apps' --java-options '--module-path=$APPDIR/fx' --java-options '--add-modules=javafx.controls'
+& "$java/jpackage.exe" --type app-image --input "$build/input" --main-jar desktop.jar --main-class local.grworld.studio.DesktopApp --runtime-image "$build/runtime" --dest $dist --name GaryRicohTools --app-version $appVersion --vendor 'Gary Fun Apps' --java-options '--module-path=$APPDIR/fx' --java-options '--add-modules=javafx.controls'
 if($LASTEXITCODE){throw 'Desktop image packaging failed'}
 Write-Output "$dist/GaryRicohTools/GaryRicohTools.exe"

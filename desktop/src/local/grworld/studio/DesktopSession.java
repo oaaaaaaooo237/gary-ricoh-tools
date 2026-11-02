@@ -14,6 +14,7 @@ final class DesktopSession {
   final CameraTransport transport;
   final DesktopStore store;
   final DesktopResources resources = new DesktopResources();
+  final DesktopEffects effects;
   final DesktopImages images = new DesktopImages();
   final Path fixtureRoot;
   Properties state;
@@ -33,6 +34,8 @@ final class DesktopSession {
   DesktopSession(CameraTransport transport, DesktopStore store, Path fixtureRoot) throws Exception {
     this.transport = transport;
     this.store = store;
+    effects = new DesktopEffects(store);
+    resources.effects = effects;
     this.fixtureRoot = fixtureRoot;
     state = store.properties("state.properties");
     if (store.exists("image-current.jpg"))
@@ -244,6 +247,7 @@ final class DesktopSession {
 
   void send(byte[] image, boolean factory) throws Exception {
     if (pending()) throw new IOException("上次结果仍待核对，不自动重复上传");
+    if (!transport.canUpload()) throw new IOException("USB 仅用于只读识别，上传图片需要相机 Wi-Fi");
     CameraIdentity expected = live();
     if (expected == null) throw new IOException("请先连接并识别相机");
     EndScreenPolicy.camera(expected.model, expected.firmware);
@@ -251,6 +255,7 @@ final class DesktopSession {
     String net = null;
     for (int i = 0; i < 3; i++) {
       CameraTransport.Identity r = transport.identify();
+      if (!transport.canUpload()) throw new IOException("复核时未连接相机 Wi-Fi，未上传图片");
       ConnectionPolicy.reply(r.elapsedMillis());
       if (!expected.same(new CameraIdentity(r.model(), r.firmware())))
         throw new IOException("复核期间机型或固件改变");
@@ -475,13 +480,7 @@ final class DesktopSession {
     if (paused) {
       EnhancementDeployment.resume(card, b, () -> sdTarget());
       byte[] boot = optional(card, "GRKIT/BOOT.TXT");
-      recordEnh(
-          context(),
-          card.key(),
-          selected(card, "FRAMING.GRM"),
-          selected(card, "GUIDES.GRM"),
-          boot,
-          false);
+      recordEnh(context(), card.key(), selectionFromCard(card), boot, false);
       state.setProperty("sd.enhanced", job.id);
     }
     state.setProperty("sd.cleaned", job.id);
@@ -525,17 +524,48 @@ final class DesktopSession {
 
   void recordEnh(CameraIdentity id, String card, boolean f, boolean g, byte[] boot, boolean manual)
       throws Exception {
+    recordEnh(id, card, EnhancementSelection.basic(f, g), boot, manual);
+  }
+
+  EnhancementSelection enhSelection() throws Exception {
+    String saved = state.getProperty("enh.effects", "");
+    return new EnhancementSelection(
+        Boolean.parseBoolean(state.getProperty("enh.f")),
+        Boolean.parseBoolean(state.getProperty("enh.g")),
+        Boolean.parseBoolean(state.getProperty("enh.film", "false")),
+        Boolean.parseBoolean(state.getProperty("enh.date", "false")),
+        saved.isEmpty() ? List.of() : Arrays.asList(saved.split(",")));
+  }
+
+  EnhancementSelection selectionFromCard(DesktopCard card) throws Exception {
+    Set<String> names = EnhancementBundle.list(optional(card, EnhancementBundle.LIST));
+    return new EnhancementSelection(
+        names.contains("FRAMING.GRM"),
+        names.contains("GUIDES.GRM"),
+        names.contains("FILMLOOK.GRM"),
+        names.contains("DATE.GRM"),
+        names.stream().filter(n -> n.endsWith(".GRF")).toList());
+  }
+
+  void recordEnh(
+      CameraIdentity id, String card, EnhancementSelection choice, byte[] boot, boolean manual)
+      throws Exception {
     state.setProperty("enh.id", UUID.randomUUID().toString());
     state.setProperty("enh.model", id.model);
     state.setProperty("enh.firmware", id.firmware);
     state.setProperty("enh.card", card);
-    state.setProperty("enh.f", String.valueOf(f));
-    state.setProperty("enh.g", String.valueOf(g));
+    state.setProperty("enh.f", String.valueOf(choice.framing));
+    state.setProperty("enh.g", String.valueOf(choice.guides));
+    state.setProperty("enh.film", String.valueOf(choice.film));
+    state.setProperty("enh.date", String.valueOf(choice.date));
+    state.setProperty("enh.effects", String.join(",", choice.effects));
     state.setProperty("enh.manual", String.valueOf(manual));
     state.setProperty("enh.baseline_len", String.valueOf(boot.length));
     state.setProperty("enh.baseline_hash", EndScreenPolicy.sha256(boot));
     state.setProperty("enh.actual_f", "0");
     state.setProperty("enh.actual_g", "0");
+    state.setProperty("enh.actual_film", "0");
+    state.setProperty("enh.actual_date", "0");
     enhCardChecked = true;
     enhReportChecked = false;
     persist();
@@ -548,15 +578,24 @@ final class DesktopSession {
       boolean g,
       EnhancementDeployment.Inspection reviewed)
       throws Exception {
+    prepareEnh(card, id, EnhancementSelection.basic(f, g), reviewed);
+  }
+
+  void prepareEnh(
+      DesktopCard card,
+      CameraIdentity id,
+      EnhancementSelection choice,
+      EnhancementDeployment.Inspection reviewed)
+      throws Exception {
     same(id);
     byte[] boot = optional(card, "GRKIT/BOOT.TXT");
     EnhancementBundle b = resources.bundle(id);
-    EnhancementDeployment.apply(card, b, f, g, reviewed, () -> same(id));
+    EnhancementDeployment.apply(card, b, choice, reviewed, () -> same(id));
     if (reviewed.remove) {
       state.remove("enh.id");
       enhCardChecked = enhReportChecked = false;
       persist();
-    } else recordEnh(id, card.key(), f, g, boot, false);
+    } else recordEnh(id, card.key(), choice, boot, false);
   }
 
   void readEnh(DesktopCard card, boolean copy) throws Exception {
@@ -565,6 +604,8 @@ final class DesktopSession {
     enhCardChecked = enhReportChecked = false;
     state.setProperty("enh.actual_f", "0");
     state.setProperty("enh.actual_g", "0");
+    state.setProperty("enh.actual_film", "0");
+    state.setProperty("enh.actual_date", "0");
     persist();
     boolean manual = Boolean.parseBoolean(state.getProperty("enh.manual"));
     if (!manual) {
@@ -589,8 +630,7 @@ final class DesktopSession {
       throw new IOException("尚未找到启动日志。请在相机完成加载后，再读取这张 SD 卡。");
     EnhancementReport.verify(
         enhIdentity(),
-        Boolean.parseBoolean(state.getProperty("enh.f")),
-        Boolean.parseBoolean(state.getProperty("enh.g")),
+        enhSelection(),
         card.read(report, 32768),
         card.read(boot, 512 * 1024),
         Integer.parseInt(state.getProperty("enh.baseline_len", "-1")),
@@ -600,8 +640,14 @@ final class DesktopSession {
   }
 
   void enhActual(boolean framing, int result) throws Exception {
+    enhActual(framing ? "f" : "g", result);
+  }
+
+  void enhActual(String module, int result) throws Exception {
     if (!enhReportChecked) throw new IOException("先读取本轮真实报告");
-    state.setProperty(framing ? "enh.actual_f" : "enh.actual_g", String.valueOf(result));
+    if (!List.of("f", "g", "film", "date").contains(module) || (result != 1 && result != 2))
+      throw new IOException("效果核对选项无效");
+    state.setProperty("enh.actual_" + module, String.valueOf(result));
     persist();
   }
 }

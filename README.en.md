@@ -2,7 +2,7 @@
 
 [中文](README.md)
 
-A Ricoh camera utility with Android and standalone Windows editions: shutdown-image editing and replacement, stock-image restoration, XPan framing and composition guides.
+A Ricoh camera utility with Android and standalone Windows editions: shutdown-image editing and replacement, stock-image restoration, XPan framing and composition guides. Windows 0.2.0 adds film looks, date imprinting and custom LUT import.
 
 - Wi-Fi image replacement: GR IV / GR IV HDF 1.20.
 - SD image replacement: GR IIIx standard / Urban / HDF 1.70.
@@ -16,6 +16,7 @@ Requires Windows x64 and JDK 21. Set `JAVA_HOME`; supply stock images and GRKit 
 
 ```powershell
 python scripts/fetch_dependencies.py
+./desktop/prepare-effects.ps1
 ./desktop/build.ps1
 ```
 

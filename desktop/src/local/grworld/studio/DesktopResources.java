@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 
 final class DesktopResources {
+  DesktopEffects effects;
+
   byte[] read(String name) throws IOException {
     if (!name.matches("[A-Za-z0-9_.-]+")) throw new IOException("资源名称无效");
     try (InputStream in = getClass().getResourceAsStream("/assets/" + name)) {
@@ -43,6 +45,8 @@ final class DesktopResources {
   EnhancementBundle bundle(CameraIdentity id) throws Exception {
     String family = EnhancementPolicy.family(id);
     if (family == null) throw new IOException("当前机型或固件不支持拍摄增强");
-    return new EnhancementBundle(family, read("grkit-" + family + ".zip"));
+    EnhancementBundle bundle = new EnhancementBundle(family, read("grkit-" + family + ".zip"));
+    if (effects != null) effects.list(id, bundle);
+    return bundle;
   }
 }
