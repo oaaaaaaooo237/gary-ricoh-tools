@@ -2,13 +2,26 @@
 
 [English](README.en.md)
 
-安卓理光相机工具：关机画面编辑与替换、原厂图片恢复、XPan 宽幅与构图辅助线。
+理光相机工具，提供安卓和 Windows 独立版：关机画面编辑与替换、原厂图片恢复、XPan 宽幅与构图辅助线。
 
 - Wi-Fi 换图：GR IV／GR IV HDF 1.20。
 - SD 换图：GR IIIx 普通／Urban／HDF 1.70。
 - 拍摄增强：基于 [GRKit 1.3.5](https://github.com/ahonn/GRKit/tree/v1.3.5)。
 
 ## 构建
+
+### Windows
+
+需要 Windows x64、JDK 21。设置 `JAVA_HOME`，原厂图片与 GRKit 资源准备方法同下方安卓构建。
+
+```powershell
+python scripts/fetch_dependencies.py
+./desktop/build.ps1
+```
+
+输出 `desktop/dist/GaryRicohTools/`，整目录保留后运行 `GaryRicohTools.exe`，无需另装 Java。使用及扩展接口见 [桌面版说明](desktop/README.md)。
+
+### 安卓
 
 需要 Python 3、JDK 21、Android SDK Platform 35 和 Build Tools 35.0.0，设置 `JAVA_HOME`、`ANDROID_HOME`。
 

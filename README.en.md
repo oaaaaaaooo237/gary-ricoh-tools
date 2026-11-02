@@ -2,13 +2,26 @@
 
 [中文](README.md)
 
-An Android utility for Ricoh cameras: shutdown-image editing and replacement, stock-image restoration, XPan framing and composition guides.
+A Ricoh camera utility with Android and standalone Windows editions: shutdown-image editing and replacement, stock-image restoration, XPan framing and composition guides.
 
 - Wi-Fi image replacement: GR IV / GR IV HDF 1.20.
 - SD image replacement: GR IIIx standard / Urban / HDF 1.70.
 - Shooting enhancements: powered by [GRKit 1.3.5](https://github.com/ahonn/GRKit/tree/v1.3.5).
 
 ## Build
+
+### Windows
+
+Requires Windows x64 and JDK 21. Set `JAVA_HOME`; supply stock images and GRKit resources as described below.
+
+```powershell
+python scripts/fetch_dependencies.py
+./desktop/build.ps1
+```
+
+Output: `desktop/dist/GaryRicohTools/`. Keep the entire folder and run `GaryRicohTools.exe`; no separate Java installation is needed. See [desktop usage and extension interfaces](desktop/README.md).
+
+### Android
 
 Requires Python 3, JDK 21, Android SDK Platform 35 and Build Tools 35.0.0. Set `JAVA_HOME` and `ANDROID_HOME`.
 

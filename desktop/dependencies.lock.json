@@ -1,0 +1,22 @@
+[
+  {
+    "name": "javafx-base-21.0.9-win.jar",
+    "url": "https://repo.maven.apache.org/maven2/org/openjfx/javafx-base/21.0.9/javafx-base-21.0.9-win.jar",
+    "sha256": "95d680b5d0b1ed9358376b12fc2f30f10e813f04f929e51698eb5507867cd408"
+  },
+  {
+    "name": "javafx-graphics-21.0.9-win.jar",
+    "url": "https://repo.maven.apache.org/maven2/org/openjfx/javafx-graphics/21.0.9/javafx-graphics-21.0.9-win.jar",
+    "sha256": "97d85e83cf16964ab015ff735df6f7f11fe115f78144ca8f1949e89a8bfddd78"
+  },
+  {
+    "name": "javafx-controls-21.0.9-win.jar",
+    "url": "https://repo.maven.apache.org/maven2/org/openjfx/javafx-controls/21.0.9/javafx-controls-21.0.9-win.jar",
+    "sha256": "991a8fbdcb289e717b3f5ada39d2c948d9a7cd8c798a9e2311a4b574274dd1e2"
+  },
+  {
+    "name": "json-20250517.jar",
+    "url": "https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar",
+    "sha256": "3ea61b2a06e31edf1c91134fe9106b0ebb16628be169f3db75bc7a2b06b45796"
+  }
+]

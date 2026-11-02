@@ -1,5 +1,8 @@
 /build/
 /dependencies/
+/desktop/dependencies/
+/desktop/build/
+/desktop/dist/
 /private-assets/
 /local.properties
 *.apk
