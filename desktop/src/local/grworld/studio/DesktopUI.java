@@ -10,6 +10,74 @@ import javafx.scene.layout.*;
 import javafx.stage.*;
 
 final class DesktopUI {
+  /** A full-width native toggle, with GR WORLD-style trailing selection feedback. */
+  static ToggleButton choiceRow(
+      String title, String detail, boolean selected, boolean switchStyle) {
+    ToggleButton row = new ToggleButton();
+    row.getStyleClass().add("choice-row");
+    row.setSelected(selected);
+    row.setMaxWidth(Double.MAX_VALUE);
+    row.setMinWidth(0);
+    row.setPrefHeight(detail == null || detail.isBlank() ? 46 : 64);
+    row.setMinHeight(Region.USE_PREF_SIZE);
+    row.setMaxHeight(Region.USE_PREF_SIZE);
+    row.setAccessibleText(title);
+    row.setAccessibleHelp("可多选；按空格或点击整行切换选择。这里只选择准备内容。");
+    Label heading = text(title, "choice-title");
+    heading.setMinHeight(Region.USE_PREF_SIZE);
+    VBox copy = new VBox(3, heading);
+    if (detail != null && !detail.isBlank()) {
+      Label description = text(detail, "choice-detail");
+      description.setMinHeight(Region.USE_PREF_SIZE);
+      copy.getChildren().add(description);
+    }
+    copy.setMinWidth(0);
+    copy.setMaxHeight(Region.USE_PREF_SIZE);
+    HBox.setHgrow(copy, Priority.ALWAYS);
+    StackPane indicator = new StackPane();
+    indicator.getStyleClass().add(switchStyle ? "choice-switch" : "choice-check");
+    indicator.setMinSize(switchStyle ? 36 : 21, 21);
+    indicator.setMaxSize(switchStyle ? 36 : 21, 21);
+    if (switchStyle) {
+      javafx.scene.shape.Circle dot = new javafx.scene.shape.Circle(7.5);
+      dot.getStyleClass().add("choice-knob");
+      dot.translateXProperty()
+          .bind(
+              javafx.beans.binding.Bindings.when(row.selectedProperty()).then(7.0).otherwise(-7.0));
+      indicator.getChildren().add(dot);
+    } else {
+      javafx.scene.shape.Polyline check = new javafx.scene.shape.Polyline(0, 5, 4, 9, 11, 0);
+      check.getStyleClass().add("choice-tick");
+      check.visibleProperty().bind(row.selectedProperty());
+      indicator.getChildren().add(check);
+    }
+    HBox trailing = new HBox(8);
+    trailing.setAlignment(Pos.CENTER_RIGHT);
+    if (switchStyle) {
+      Label state = text("", "choice-state");
+      state
+          .textProperty()
+          .bind(
+              javafx.beans.binding.Bindings.when(row.selectedProperty())
+                  .then("已选")
+                  .otherwise("未选"));
+      state.setMinWidth(28);
+      trailing.getChildren().add(state);
+    }
+    trailing.getChildren().add(indicator);
+    HBox content = new HBox(12, copy, trailing);
+    content.setAlignment(Pos.CENTER_LEFT);
+    content.setMaxWidth(Double.MAX_VALUE);
+    content
+        .prefWidthProperty()
+        .bind(javafx.beans.binding.Bindings.max(180, row.widthProperty().subtract(24)));
+    content.setMaxHeight(Region.USE_PREF_SIZE);
+    content.setMouseTransparent(true);
+    row.setGraphic(content);
+    row.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+    return row;
+  }
+
   static Label text(String value, String style) {
     Label l = new Label(value);
     l.setWrapText(true);

@@ -42,10 +42,11 @@ final class EffectPicker {
           dialog = new Dialog<>();
           dialog.initOwner(app.stage);
           dialog.setTitle("选择胶片风格");
-          dialog.setHeaderText("内置胶片与自定义风格共用这个列表");
+          dialog.setHeaderText("选择胶片风格 · 可多选");
           list.getStyleClass().add("effect-list");
           list.getItems().setAll(effects);
-          list.setPrefWidth(245);
+          list.setPrefWidth(280);
+          list.setMinWidth(260);
           list.setPrefHeight(340);
           selected.retainAll(effects.stream().map(e -> e.file).toList());
           list.setCellFactory(
@@ -58,9 +59,13 @@ final class EffectPicker {
                         setText(null);
                         return;
                       }
-                      CheckBox box = new CheckBox(effect.toString());
-                      box.setSelected(selected.contains(effect.file));
-                      box.setMaxWidth(Double.MAX_VALUE);
+                      ToggleButton box =
+                          DesktopUI.choiceRow(
+                              effect.name,
+                              effect.custom ? "自定义滤镜" : null,
+                              selected.contains(effect.file),
+                              false);
+                      box.prefWidthProperty().bind(widthProperty().subtract(4));
                       box.setOnAction(
                           e -> {
                             if (box.isSelected()) selected.add(effect.file);
@@ -95,8 +100,8 @@ final class EffectPicker {
           Button lightroom = DesktopUI.button("Lightroom 预设转换", this::lightroom, false);
           VBox content =
               DesktopUI.box(
-                  body,
                   count,
+                  body,
                   new HBox(12, imported, lightroom),
                   DesktopUI.text("预览为近似色彩示意，建议使用标准模式 JPEG。真实效果仍需在相机试拍确认。", "hint"));
           dialog.getDialogPane().setContent(content);
@@ -105,7 +110,12 @@ final class EffectPicker {
           Button saveButton = (Button) dialog.getDialogPane().lookupButton(save);
           saveButton.setMinWidth(142);
           ButtonBar.setButtonUniformSize(saveButton, false);
-          dialog.getDialogPane().setPrefWidth(730);
+          dialog.getDialogPane().setPrefWidth(765);
+          saveButton
+              .textProperty()
+              .bind(
+                  javafx.beans.binding.Bindings.createStringBinding(
+                      () -> "使用所选（" + selected.size() + "）", count.textProperty()));
           ((Button) dialog.getDialogPane().lookupButton(save))
               .disableProperty()
               .bind(
@@ -122,7 +132,7 @@ final class EffectPicker {
   }
 
   void updateCount() {
-    count.setText("已选 " + selected.size() + " 个风格 · 最多 40 个，机内 GRK 菜单切换");
+    count.setText("已选 " + selected.size() + " / 40 · 点击整行勾选或取消；右侧显示该风格预览");
   }
 
   void render() {

@@ -163,14 +163,26 @@ final class EnhancementWorkspace {
     cards.setOnAction(e -> cardPath = cards.getValue());
     cardPath = cards.getValue();
     if (!has || configuring) {
-      CheckBox f = new CheckBox("XPan 宽幅 · 65:24"),
-          g = new CheckBox("构图辅助线"),
-          filmBox = new CheckBox("胶片模拟"),
-          dateBox = new CheckBox("日期打印");
-      f.setSelected(framing);
-      g.setSelected(guides);
-      filmBox.setSelected(film);
-      dateBox.setSelected(date);
+      ToggleButton f = DesktopUI.choiceRow("XPan 宽幅", "65:24 宽幅构图", framing, true),
+          g = DesktopUI.choiceRow("构图辅助线", "网格、中心线等构图参考", guides, true),
+          filmBox = DesktopUI.choiceRow("胶片模拟", "选择内置风格或导入滤镜", film, true),
+          dateBox = DesktopUI.choiceRow("日期打印", "日期格式与位置在机内设置", date, true);
+      Label selectionCount = DesktopUI.text("", "selection-count");
+      selectionCount
+          .textProperty()
+          .bind(
+              javafx.beans.binding.Bindings.createStringBinding(
+                  () ->
+                      "已选 "
+                          + ((f.isSelected() ? 1 : 0)
+                              + (g.isSelected() ? 1 : 0)
+                              + (filmBox.isSelected() ? 1 : 0)
+                              + (dateBox.isSelected() ? 1 : 0))
+                          + " / 4 项 · 可多选",
+                  f.selectedProperty(),
+                  g.selectedProperty(),
+                  filmBox.selectedProperty(),
+                  dateBox.selectedProperty()));
       f.setOnAction(
           e -> {
             framing = f.isSelected();
@@ -216,18 +228,26 @@ final class EnhancementWorkspace {
               looks);
       filmOptions.visibleProperty().bind(filmBox.selectedProperty());
       filmOptions.managedProperty().bind(filmBox.selectedProperty());
-      VBox dateOptions =
-          DesktopUI.box(DesktopUI.text("把日期印到照片上。支持经典数字、GR1s 点阵和 GR II 风格；格式与竖拍位置在机内设置。", "hint"));
-      dateOptions.visibleProperty().bind(dateBox.selectedProperty());
-      dateOptions.managedProperty().bind(dateBox.selectedProperty());
-      rail.getChildren().addAll(f, g, filmBox, filmOptions, dateBox, dateOptions, cards);
+      VBox choices = new VBox(0, f, g, filmBox, dateBox);
+      choices.getStyleClass().add("choice-list");
+      rail.getChildren()
+          .addAll(selectionCount, choices, filmOptions, DesktopUI.text("目标 SD 卡", "hint"), cards);
       Button prepare = DesktopUI.button("准备到 SD 卡", () -> prepare(false), true);
       prepare
           .disableProperty()
           .bind(
               javafx.beans.binding.Bindings.createBooleanBinding(
-                  () -> !supported || (filmBox.isSelected() && selectedEffects.isEmpty()),
-                  filmBox.selectedProperty()));
+                  () ->
+                      !supported
+                          || (!f.isSelected()
+                              && !g.isSelected()
+                              && !filmBox.isSelected()
+                              && !dateBox.isSelected())
+                          || (filmBox.isSelected() && selectedEffects.isEmpty()),
+                  f.selectedProperty(),
+                  g.selectedProperty(),
+                  filmBox.selectedProperty(),
+                  dateBox.selectedProperty()));
       Button manual = DesktopUI.button("系统无法写卡？手动导出 ZIP", this::manual, false);
       manual.disableProperty().bind(prepare.disableProperty());
       rail.getChildren().addAll(prepare, manual);

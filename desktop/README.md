@@ -14,6 +14,8 @@ Windows x64 独立程序，与安卓共享机型、固件门槛及 SD 核验核�
 8. 自定义滤镜：导入 `.cube` 或 Hald PNG/TIFF，选择输入色彩空间，在本机离线转换并保存。Lightroom 的 `.xmp` 需先应用到程序导出的 Hald 模板，再按原尺寸导出 sRGB PNG/TIFF 后导入。局部蒙版、修复、模糊等不能转换为色彩滤镜。
 9. 日期打印：选择模块后随 SD 文件一起准备，日期样式、格式及位置在机内 GRK / Fn 菜单设置。左侧日期和构图均为示意，照片效果需试拍确认。
 
+模块支持多选：点击整行切换，右侧绿色开关与“已选”表示将加入准备清单，灰色为未选；这一步尚未在相机启用。胶片库中点击整行勾选或取消，绿色圆形勾选表示已加入选择；顶部数量和确认按钮同步更新。键盘 Tab 定位、空格切换选择。
+
 拍摄增强适用：GR3／GR3 HDF 2.10、2.20；GR3X／HDF／Urban 1.60、1.70；GR4／GR4 HDF 1.11、1.20。GR3 不开放关机图替换。SD 关机图 1.70 的实机执行、显示及恢复仍待验证。
 
 中断后重新读取相机或卡片实际状态，不沿用本地“完成”标记，也不自动重传结果未知的 Wi-Fi 操作。数据存于当前 Windows 用户的 `LocalAppData/GaryRicohTools`。
@@ -41,6 +43,8 @@ Extract the complete portable folder and launch `GaryRicohTools.exe`. Choose shu
 Use the single image picker to import a new photo or reopen a prepared image. Crop, pan, resize or add a background; the preview decodes the final JPEG. GR IV / IV HDF 1.20 use Wi-Fi replacement with automatic preflight and a final physical-display check. GR IIIx standard / Urban / HDF 1.70 use staged SD preparation, complete camera readbacks, installation, display confirmation and cleanup. GR III supports shooting enhancements only.
 
 Enhancements use GRKit SD files: XPan framing, composition guides, film looks and date imprinting. The shared look library includes bundled styles and custom `.cube` / Hald PNG/TIFF imports, with offline conversion, saved entries and approximate photo previews. Lightroom `.xmp` presets require the exported Hald template workflow; direct XMP import is unavailable. Select date format and style on the camera.
+
+Click a complete module row to select it; trailing green switches and selection labels indicate inclusion in the preparation list. These selections do not immediately enable camera modules. In the film library, green circular checkmarks show all selected looks; the count and confirmation button update together. Unchecking one look preserves other selections.
 
 Read the new execution report and check each selected module on the camera. Interrupted tasks require external evidence before continuing; uncertain Wi-Fi requests are never retried automatically. Framing and guides were confirmed by the user on GR IV HDF 1.20. New film/date effects and other models still require physical-camera verification. Windows GUI import, preview, Hald export and SD preparation were operated with synthetic camera/card fixtures. Android has not received these three new modules.
 
