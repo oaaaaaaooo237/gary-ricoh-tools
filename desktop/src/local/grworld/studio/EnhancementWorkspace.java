@@ -111,7 +111,7 @@ final class EnhancementWorkspace {
                         ? "请读取原任务的实际 SD 卡，核实文件与本轮运行报告。本地记录不能代替相机执行结果。"
                         : !s.enhReportChecked
                             ? "安全弹出卡并放回相机。首次按住 MENU 开机，等待自动关机后正常开机。等待 GRKit 加载，在 ADJ 第六项 GRK"
-                                  + " 设置模块，之后把卡接回电脑读报告。"
+                                + " 设置模块，之后把卡接回电脑读报告。"
                             : complete()
                                 ? "卡文件与本轮报告已核对；实际显示与试拍结果由你记录为正确。"
                                 : "请实际查看相机取景和试拍结果，分别记录已选模块的显示。报告通过不等于实际效果已确认。";
@@ -176,7 +176,8 @@ final class EnhancementWorkspace {
           rail.getChildren().add(DesktopUI.text("后续换卡、更新或重新打开任务时，仍需读取实际卡片重新核实。", "hint"));
       }
     }
-    if (!s.enhMessage.isEmpty()) rail.getChildren().add(DesktopUI.text(s.enhMessage, "hint"));
+    if (!s.enhMessage.isEmpty() && !(s.enhReportChecked && complete()))
+      rail.getChildren().add(DesktopUI.text(s.enhMessage, "hint"));
     rail.getChildren()
         .addAll(
             DesktopUI.rule(),
@@ -237,30 +238,34 @@ final class EnhancementWorkspace {
         && (!guides || s.state.getProperty("enh.actual_g", "0").equals("1"));
   }
 
-  Button actualButton(boolean f) {
+  Node actualButton(boolean f) {
     String key = f ? "enh.actual_f" : "enh.actual_g",
         name = f ? "XPan 宽幅" : "构图辅助线",
         value = s.state.getProperty(key, "0");
-    return DesktopUI.button(
-        name + " · " + (value.equals("1") ? "正确" : value.equals("2") ? "不正确" : "待核对"),
-        () -> {
-          ChoiceDialog<String> d = new ChoiceDialog<>("暂未核对", List.of("正确", "不正确", "暂未核对"));
-          d.initOwner(app.stage);
-          d.setTitle("核对" + name);
-          d.setHeaderText("请按相机实际取景与试拍结果记录");
-          DesktopUI.style(d.getDialogPane().getScene());
-          d.showAndWait()
-              .ifPresent(
-                  result ->
-                      app.work(
-                          "记录实际效果…",
-                          () -> {
-                            s.enhActual(f, result.equals("正确") ? 1 : result.equals("不正确") ? 2 : 0);
-                            return null;
-                          },
-                          r -> app.notifyUser("实际效果已记录。")));
-        },
-        false);
+    HBox answers = new HBox(10);
+    for (int result : new int[] {1, 2}) {
+      String label = result == 1 ? "正确" : "不正确";
+      Button answer =
+          DesktopUI.button(
+              label,
+              () ->
+                  app.work(
+                      "记录实际效果…",
+                      () -> {
+                        s.enhActual(f, result);
+                        return null;
+                      },
+                      r -> app.notifyUser("实际效果已记录。")),
+              false);
+      answer.setAccessibleText(name + " · " + label);
+      answer.setDisable(value.equals(String.valueOf(result)));
+      HBox.setHgrow(answer, Priority.ALWAYS);
+      answers.getChildren().add(answer);
+    }
+    return DesktopUI.box(
+        DesktopUI.text(
+            name + " · " + (value.equals("1") ? "正确" : value.equals("2") ? "不正确" : "待核对"), "body"),
+        answers);
   }
 
   void prepare(boolean remove) {

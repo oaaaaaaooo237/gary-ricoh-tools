@@ -29,9 +29,13 @@ final class SdWorkspace {
     int manual = 0;
     for (int p = 1; p <= 3; p++)
       if ((j.id + "/" + p).equals(s.state.getProperty("sd.manual"))) manual = p;
+    boolean restorePending = !j.restored && (r != null && r.preparedPhase == 3 || manual == 3);
     if (!s.sdVerified) {
       step = "核实 SD 实际进度";
       explanation = "重新读取目标卡的启动文件、任务记录和完整读回。历史完成标记不能代替当前证据。";
+    } else if (restorePending) {
+      step = "在相机执行旧图恢复";
+      explanation = "旧图恢复文件已准备；相机执行后仍须完整读回，之后核对实际显示。";
     } else if (j.installed || j.restored) {
       if (j.display == 0) {
         step = "核对实际关机画面";
@@ -45,7 +49,8 @@ final class SdWorkspace {
         explanation =
             j.id.equals(s.state.getProperty("sd.enhanced"))
                 ? "已清理换图入口并恢复增强。请重新开机核对增强；继续使用增强时保持 Script 开启。"
-                : "本任务入口已清理。请在相机关闭 Script，并确认相机正常开关机。";
+                : "本任务入口已清理。导出下方关闭文件，把 ZIP 中 SD_ROOT 内的文件放到没有其他启动脚本的卡根目录。按住 MENU"
+                      + " 开机，等待自动关机；再移除关闭文件并正常开关机核对。仍使用其他 SD 脚本时，请先保留本步，不要关闭 Script。";
         action = 5;
       }
     } else if (!j.staged) {
@@ -54,18 +59,21 @@ final class SdWorkspace {
         explanation = "文件已准备，尚未证明机内执行。安全弹出卡并放回相机，按任务说明执行；完成后把卡接回电脑读取本轮全部结果。";
       } else {
         step = "准备暂存阶段";
-        explanation = "先把候选图暂存至相机内部，并取得当前关机图备份与完整读回；校验通过才开放安装。";
+        explanation =
+            j.factoryRecovery
+                ? "先把原厂图片暂存至相机内部并完整读回；校验通过才开放安装。本次原厂恢复不建立当前图片备份。"
+                : "先把候选图暂存至相机内部，并取得当前关机图备份与完整读回；校验通过才开放安装。";
         action = 1;
       }
     } else if (r != null && r.preparedPhase == 2 || manual == 2) {
       step = "在相机执行安装";
       explanation = "安装卡文件已准备。相机执行后，把卡接回电脑，完整核对本轮目标图片和完成标记。";
-    } else if (r != null && r.preparedPhase == 3 || manual == 3) {
-      step = "在相机执行旧图恢复";
-      explanation = "旧图恢复文件已准备；相机执行后仍须完整读回，之后核对实际显示。";
     } else {
       step = "准备安装阶段";
-      explanation = "暂存、备份与操作前目标已完整核验。下一步把内部候选图安装到目标，再完整读回。";
+      explanation =
+          j.factoryRecovery
+              ? "原厂图片暂存已完整核验。下一步安装为关机画面，再完整读回。"
+              : "暂存、备份与操作前目标已完整核验。下一步把内部候选图安装到目标，再完整读回。";
       action = 2;
     }
     if (action == 5 && j.id.equals(s.state.getProperty("sd.script_checked"))) {
@@ -94,14 +102,22 @@ final class SdWorkspace {
               DesktopUI.button(
                   "手动导出" + (phase == 1 ? "暂存" : "安装") + " ZIP", () -> exportPhase(phase), false));
     } else if (action == 4) {
-      v.getChildren().addAll(cards, DesktopUI.button("移除本任务启动文件", this::cleanup, true));
+      v.getChildren()
+          .addAll(
+              cards,
+              DesktopUI.button("移除本任务启动文件", this::cleanup, true),
+              DesktopUI.text("手动复制的任务包：仅移除本轮复制的 script/startup.ttl 和入口文件，保留其他内容；然后重新读卡核实。", "hint"),
+              DesktopUI.button("已手动清理，重新读卡核实", () -> read(false), false));
     } else if (action == 5) {
       if (!j.id.equals(s.state.getProperty("sd.script_checked"))) {
+        boolean enhanced = j.id.equals(s.state.getProperty("sd.enhanced"));
+        if (!enhanced)
+          v.getChildren()
+              .add(
+                  DesktopUI.button(
+                      "导出此机型的关闭 Script 文件", app.enhancementWorkspace::scriptsOff, false));
         CheckBox checked =
-            new CheckBox(
-                j.id.equals(s.state.getProperty("sd.enhanced"))
-                    ? "已重新开机核对增强，Script 保持开启"
-                    : "已在相机关闭 Script，并核对正常开关机");
+            new CheckBox(enhanced ? "已重新开机核对增强，Script 保持开启" : "已执行关闭文件、移除其入口，并核对正常开关机");
         checked.setWrapText(true);
         checked.setOnAction(
             e -> {
@@ -117,7 +133,7 @@ final class SdWorkspace {
             });
         v.getChildren().add(checked);
       }
-    } else if (s.sdVerified && (j.installed || j.restored) && j.display == 0) {
+    } else if (s.sdVerified && !restorePending && (j.installed || j.restored) && j.display == 0) {
       v.getChildren()
           .addAll(
               DesktopUI.button("显示正确", () -> actual(1), true),
@@ -126,6 +142,10 @@ final class SdWorkspace {
     } else if (s.sdVerified) {
       v.getChildren()
           .addAll(
+              DesktopUI.text(
+                  "安全弹出 SD 卡并放回相机。首次按住 MENU 开机进入工厂菜单，只启用"
+                      + " Script；随后正常开机执行，等待存储活动停止再关机。把卡接回电脑后，点击下方读取结果。",
+                  "body"),
               cards,
               DesktopUI.button("读取相机执行结果", () -> read(false), true),
               DesktopUI.button("选择完整读回副本", () -> read(true), false),
@@ -141,7 +161,8 @@ final class SdWorkspace {
                                   : j.staged ? 2 : 1)),
                   false));
     }
-    if (!s.sdMessage.isEmpty()) v.getChildren().add(DesktopUI.text(s.sdMessage, "hint"));
+    if (!s.sdMessage.isEmpty() && (!s.sdVerified || !(j.installed || j.restored) || j.display == 0))
+      v.getChildren().add(DesktopUI.text(s.sdMessage, "hint"));
     v.getChildren().addAll(DesktopUI.rule(), DesktopUI.button("任务、旧图恢复与异常清理", this::manage, false));
     return v;
   }
@@ -310,7 +331,7 @@ final class SdWorkspace {
           s.sdActual(result);
           return null;
         },
-        r -> app.notifyUser("实际显示已记录，接下来清理本轮启动任务。"));
+        r -> app.notifyUser("实际显示已记录，请继续当前步骤。"));
   }
 
   void cleanup() {
@@ -332,13 +353,11 @@ final class SdWorkspace {
 
   void manage() {
     List<String> options = new ArrayList<>(List.of("导出当前任务记录", "导入或打开任务", "新建换图任务", "只清理本次启动任务"));
-    if (s.job != null && s.job.canRestore() && !s.job.restored) options.add("恢复本轮旧图");
-    ChoiceDialog<String> d = new ChoiceDialog<>(options.get(0), options);
-    d.initOwner(app.stage);
-    d.setTitle("任务与恢复");
-    d.setHeaderText("中断先读卡核实，不按本地完成标记重复运行。");
-    DesktopUI.style(d.getDialogPane().getScene());
-    d.showAndWait()
+    if (s.job != null && s.job.canRestore() && !s.job.restored) {
+      options.add("恢复本轮旧图");
+      options.add("手动导出旧图恢复 ZIP");
+    }
+    DesktopUI.actionChoice(app.stage, "任务与恢复", "中断先读卡核实，不按本地完成标记重复运行。", options)
         .ifPresent(
             action -> {
               if (action.startsWith("导出")) {
@@ -372,6 +391,7 @@ final class SdWorkspace {
                         app.notifyUser("原任务已保留，可以选择新图片。");
                       });
               } else if (action.startsWith("只清理")) cleanup();
+              else if (action.startsWith("手动")) exportPhase(3);
               else deploy(3);
             });
   }

@@ -33,7 +33,10 @@ final class ImageWorkspace {
             DesktopUI.text(
                 visual == null
                     ? "输出标准 · 720 × 480 · JPEG"
-                    : "720 × 480 · " + visual.length + " 字节 · " + (task ? "本轮 SD 候选 JPEG" : "JPEG"),
+                    : "720 × 480 · "
+                        + visual.length
+                        + " 字节 · "
+                        + (task ? restoringOldImage() ? "本轮旧图备份 JPEG" : "本轮 SD 候选 JPEG" : "JPEG"),
                 "hint"));
     HBox actions = new HBox(12);
     Button choose = DesktopUI.button("选择图片", this::choose, false),
@@ -283,7 +286,16 @@ final class ImageWorkspace {
   }
 
   byte[] displayImage() {
-    return sdTask() ? s.job.candidate : s.prepared;
+    if (!sdTask()) return s.prepared;
+    return restoringOldImage() ? s.job.proof.get(s.job.name('O', "JPG")) : s.job.candidate;
+  }
+
+  boolean restoringOldImage() {
+    return sdTask()
+        && s.job.canRestore()
+        && (s.job.restored
+            || s.sdResult != null && s.sdResult.preparedPhase == 3
+            || (s.job.id + "/3").equals(s.state.getProperty("sd.manual")));
   }
 
   void export(boolean project) {

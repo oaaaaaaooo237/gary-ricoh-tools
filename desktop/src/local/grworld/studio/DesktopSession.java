@@ -403,6 +403,15 @@ final class DesktopSession {
     sdCopy = copy;
     sdVerified = !result.interrupted;
     sdMessage = result.message;
+    state.remove("sd.manual");
+    if (!copy && result.cleaned && (job.installed || job.restored)) {
+      state.setProperty("sd.cleaned", job.id);
+      if (result.resumed) state.setProperty("sd.enhanced", job.id);
+    } else {
+      state.remove("sd.cleaned");
+      state.remove("sd.script_checked");
+      state.remove("sd.enhanced");
+    }
     saveJob();
   }
 
@@ -498,6 +507,10 @@ final class DesktopSession {
 
   void manualSdSaved(int phase) throws Exception {
     state.setProperty("sd.manual", job.id + "/" + phase);
+    state.remove("sd.cleaned");
+    state.remove("sd.script_checked");
+    state.remove("sd.enhanced");
+    sdVerified = false;
     persist();
   }
 
@@ -570,6 +583,10 @@ final class DesktopSession {
         report =
             SdCardDeployment.exists(card, "GRKIT/REPORT.TXT") ? "GRKIT/REPORT.TXT" : "REPORT.TXT",
         boot = SdCardDeployment.exists(card, "GRKIT/BOOT.TXT") ? "GRKIT/BOOT.TXT" : "BOOT.TXT";
+    if (!SdCardDeployment.exists(card, report))
+      throw new IOException("尚未找到运行报告。请把卡放回相机加载 GRKit，再将卡接回电脑读取。");
+    if (!SdCardDeployment.exists(card, boot))
+      throw new IOException("尚未找到启动日志。请在相机完成加载后，再读取这张 SD 卡。");
     EnhancementReport.verify(
         enhIdentity(),
         Boolean.parseBoolean(state.getProperty("enh.f")),

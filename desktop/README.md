@@ -1,6 +1,6 @@
 # Gary趣味应用 · Windows
 
-Windows x64 独立程序，与安卓共享机型、固件门槛及 SD 核验核心。当前为预览版，桌面视觉验收和实机效果验收尚未完成。
+Windows x64 独立程序，与安卓共享机型、固件门槛及 SD 核验核心。当前为预览版，已用合成相机和模拟卡操作桌面界面；实机执行与效果仍待验证。
 
 ## 使用
 
@@ -30,4 +30,4 @@ Extract the complete portable folder and launch `GaryRicohTools.exe`. Choose shu
 
 Use the single image picker to import a new photo or reopen a prepared image. Crop, pan, resize or add a background; the preview decodes the final JPEG. GR IV / IV HDF 1.20 use Wi-Fi replacement with automatic preflight and a final physical-display check. GR IIIx standard / Urban / HDF 1.70 use staged SD preparation, complete camera readbacks, installation, display confirmation and cleanup. GR III supports shooting enhancements only.
 
-Enhancements use GRKit SD files. Read the new execution report and check each selected module on the camera. Interrupted tasks require external evidence before continuing; uncertain Wi-Fi requests are never retried automatically. This preview still needs desktop visual acceptance and physical-camera qualification.
+Enhancements use GRKit SD files. Read the new execution report and check each selected module on the camera. Interrupted tasks require external evidence before continuing; uncertain Wi-Fi requests are never retried automatically. Desktop workflows have been operated with synthetic camera/card fixtures; physical-camera execution and effects remain unverified.

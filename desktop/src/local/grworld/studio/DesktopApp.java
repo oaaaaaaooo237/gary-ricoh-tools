@@ -17,7 +17,7 @@ import javafx.stage.Stage;
 import local.grworld.studio.spi.*;
 
 public final class DesktopApp extends Application implements FeatureHost {
-  public static final String VERSION = "0.1.0-preview";
+  public static final String VERSION = "0.1.1-preview";
   DesktopSession session;
   Stage stage;
   BorderPane shell;
@@ -146,21 +146,25 @@ public final class DesktopApp extends Application implements FeatureHost {
         .focusedProperty()
         .addListener(
             (o, old, focused) -> {
-              if (focused && !active.equals("home") && !active.equals("settings")) refreshDevice();
+              if (focused && shouldMonitor()) refreshDevice();
             });
     polling.scheduleWithFixedDelay(
         () ->
             Platform.runLater(
                 () -> {
-                  if (!active.equals("home")
-                      && !active.equals("settings")
+                  if (shouldMonitor()
                       && !busy
                       && !checking
-                      && stage.isFocused()) refreshDevice();
+                      && stage.isShowing()
+                      && !stage.isIconified()) refreshDevice();
                 }),
         5,
         5,
         TimeUnit.SECONDS);
+  }
+
+  boolean shouldMonitor() {
+    return session.sessionIdentity != null || features.containsKey(active);
   }
 
   Button nav(String title, Runnable r) {
@@ -209,14 +213,30 @@ public final class DesktopApp extends Application implements FeatureHost {
               DesktopUI.text(f.title(), "entry-title"), DesktopUI.text(f.description(), "hint"));
       HBox row = new HBox(25);
       row.setAlignment(Pos.CENTER_LEFT);
+      copy.setMinWidth(0);
+      row.setMinWidth(0);
+      row.setMinHeight(84);
+      row.setPrefHeight(84);
+      row.setMaxHeight(84);
+      copy.setMaxHeight(Region.USE_PREF_SIZE);
       HBox.setHgrow(copy, Priority.ALWAYS);
-      row.getChildren().addAll(copy, DesktopUI.text("›", "entry-arrow"));
+      Label arrow = DesktopUI.text("›", "entry-arrow");
+      arrow.setMinWidth(Region.USE_PREF_SIZE);
+      arrow.setMaxWidth(Region.USE_PREF_SIZE);
+      arrow.setMaxHeight(Region.USE_PREF_SIZE);
+      row.getChildren().addAll(copy, arrow);
       Button button = new Button();
       button.setGraphic(row);
       button.setMaxWidth(Double.MAX_VALUE);
+      button.setMinHeight(128);
+      button.setPrefHeight(128);
+      button.setMaxHeight(128);
       button.getStyleClass().add("home-entry");
       button.setAccessibleText(f.title());
-      row.maxWidthProperty().bind(button.widthProperty().subtract(24));
+      // A graphic's preferred height must use the available width, rather than
+      // wrapping against its initial zero-width maximum during the first layout.
+      row.prefWidthProperty()
+          .bind(javafx.beans.binding.Bindings.max(200, shell.widthProperty().subtract(136)));
       button.setOnAction(e -> open(f.id()));
       content.getChildren().add(button);
     }

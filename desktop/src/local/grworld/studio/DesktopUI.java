@@ -74,7 +74,10 @@ final class DesktopUI {
     a.initOwner(owner);
     a.setTitle(title);
     a.setHeaderText(title);
-    a.setContentText(body);
+    Label content = text(body, "body");
+    content.setMinHeight(Region.USE_PREF_SIZE);
+    content.setPrefWidth(480);
+    a.getDialogPane().setContent(content);
     a.getDialogPane().setPrefWidth(520);
     style(a.getDialogPane().getScene());
     a.showAndWait();
@@ -92,6 +95,32 @@ final class DesktopUI {
     d.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
     style(d.getDialogPane().getScene());
     d.showAndWait();
+  }
+
+  static Optional<String> actionChoice(
+      Window owner, String title, String note, List<String> actions) {
+    Dialog<String> d = new Dialog<>();
+    d.initOwner(owner);
+    d.setTitle(title);
+    VBox body = box(text(note, "hint"));
+    body.setPadding(new Insets(24));
+    body.setPrefWidth(460);
+    for (String action : actions)
+      body.getChildren()
+          .add(
+              button(
+                  action,
+                  () -> {
+                    d.setResult(action);
+                    d.close();
+                  },
+                  false));
+    ScrollPane scroll = scroll(body);
+    scroll.setPrefViewportHeight(Math.min(460, 90 + actions.size() * 60));
+    d.getDialogPane().setContent(scroll);
+    d.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+    style(d.getDialogPane().getScene());
+    return d.showAndWait();
   }
 
   static Path chooseOpen(Window owner, String title, String... patterns) {

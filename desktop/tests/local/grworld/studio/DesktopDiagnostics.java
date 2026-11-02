@@ -60,6 +60,7 @@ public final class DesktopDiagnostics {
     images(root.resolve("images"));
     wifi(root.resolve("wifi"));
     sd(root.resolve("sd"));
+    manualSd(root.resolve("manual-sd"));
     card(root.resolve("card"));
     reports();
     System.out.println(
@@ -168,7 +169,9 @@ public final class DesktopDiagnostics {
       byte[] bytes =
           name.endsWith("TXT")
               ? j.marker(phase)
-              : name.equals(j.name('O', "JPG")) || name.equals(j.name('P', "JPG"))
+              : name.equals(j.name('O', "JPG"))
+                      || name.equals(j.name('P', "JPG"))
+                      || name.equals(j.name('R', "JPG"))
                   ? j.original
                   : j.candidate;
       c.create(name, bytes);
@@ -238,6 +241,66 @@ public final class DesktopDiagnostics {
     rejected(() -> read.delete("Case.TXT"));
     rejected(() -> c.create("CASE.TXT", new byte[] {3}));
     rejected(() -> new DesktopCard(root, true, false));
+  }
+
+  static void manualSd(Path root) throws Exception {
+    Camera camera = new Camera();
+    camera.model = "RICOH GR IIIx";
+    camera.firmware = "1.70";
+    DesktopSession s = session(root, camera);
+    s.observe();
+    s.importImage(s.resources.stock(Gr3Profile.STANDARD), "test", true);
+    s.newSd(Gr3Profile.STANDARD, false);
+    DesktopCard card = s.card(root.resolve("fixture/card"), true);
+    s.reconcile(card, false);
+    s.manualSdSaved(1);
+    require(!s.sdVerified, "Exported ZIP does not verify an SD card");
+    card.mkdir("script");
+    card.create(SdCardDeployment.ENTRY, Gr3SdSession.factoryEntry());
+    card.create(SdCardDeployment.MOD, Gr3SdSession.developMode());
+    card.create(SdCardDeployment.STARTUP, s.job.script(1));
+    s.reconcile(card, false);
+    require(
+        s.sdResult.preparedPhase == 1 && !s.job.staged && s.state.getProperty("sd.manual") == null,
+        "Exact manual files derive preparation, not execution");
+    proof(card, s.job, 1);
+    s.reconcile(card, false);
+    card.delete(SdCardDeployment.STARTUP);
+    card.create(SdCardDeployment.STARTUP, s.job.script(2));
+    s.reconcile(card, false);
+    require(
+        s.sdResult.preparedPhase == 2 && !s.job.installed,
+        "Manual install still needs target readback");
+    proof(card, s.job, 2);
+    s.reconcile(card, false);
+    s.manualSdSaved(3);
+    card.delete(SdCardDeployment.STARTUP);
+    card.create(SdCardDeployment.STARTUP, s.job.script(3));
+    s.reconcile(card, false);
+    require(
+        s.job.installed && !s.job.restored && s.sdResult.preparedPhase == 3,
+        "Installed image and pending rollback are distinct states");
+    rejected(() -> SdCardDeployment.inspectCleanup(card, s.job));
+    proof(card, s.job, 3);
+    s.reconcile(card, false);
+    require(s.job.restored, "Manual restore requires complete matching backup readback");
+    card.delete(SdCardDeployment.STARTUP);
+    card.delete(SdCardDeployment.ENTRY);
+    card.delete(SdCardDeployment.MOD);
+    s.reconcile(card, false);
+    require(
+        s.sdResult.cleaned && s.job.id.equals(s.state.getProperty("sd.cleaned")),
+        "External cleanup is derived from actual card state");
+    s.state.setProperty("sd.script_checked", s.job.id);
+    card.create(SdCardDeployment.ENTRY, Gr3SdSession.factoryEntry());
+    card.create(SdCardDeployment.MOD, Gr3SdSession.developMode());
+    card.create(SdCardDeployment.STARTUP, s.job.script(3));
+    s.reconcile(card, false);
+    require(
+        !s.sdResult.cleaned
+            && s.state.getProperty("sd.cleaned") == null
+            && s.state.getProperty("sd.script_checked") == null,
+        "Reappearing startup files invalidate cached cleanup and script closure");
   }
 
   static void reports() throws Exception {
