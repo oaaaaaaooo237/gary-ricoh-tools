@@ -55,9 +55,9 @@
 .choice-title { -fx-font-size:13px; -fx-text-fill:#f5f5f3; }
 .choice-detail { -fx-font-size:12px; -fx-text-fill:#b9bdb9; }
 .choice-switch { -fx-background-color:#555855; -fx-background-radius:11; }
-.choice-knob { -fx-fill:#ededeb; }
+.choice-knob { -fx-fill:#ffffff; }
 .choice-row:selected .choice-switch { -fx-background-color:#258648; }
-.choice-row:selected .choice-knob { -fx-fill:#7be59d; }
+.choice-row:selected .choice-knob { -fx-fill:#ffffff; }
 .choice-check { -fx-background-color:transparent; -fx-border-color:#969c97; -fx-border-width:1.5; -fx-border-radius:11; -fx-background-radius:11; }
 .choice-row:selected .choice-check { -fx-background-color:#258648; -fx-border-color:#6dda91; }
 .choice-tick { -fx-fill:transparent; -fx-stroke:#ffffff; -fx-stroke-width:2; -fx-stroke-line-cap:round; -fx-stroke-line-join:round; }
