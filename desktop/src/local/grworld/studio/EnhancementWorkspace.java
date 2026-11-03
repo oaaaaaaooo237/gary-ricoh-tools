@@ -20,7 +20,7 @@ final class EnhancementWorkspace {
           + "4. 实际查看取景并试拍。之后把卡接回电脑，读取运行报告并核对效果。";
   final DesktopApp app;
   final DesktopSession s;
-  boolean framing = true, guides = true, film, date, configuring;
+  boolean framing, guides, film, date, configuring;
   final Set<String> selectedEffects = new TreeSet<>();
   Path cardPath;
   String style = "三分线", lineColor = "白色", mask = "半透明遮幅";
@@ -34,6 +34,8 @@ final class EnhancementWorkspace {
   Node view() {
     CameraIdentity id = s.context();
     boolean supported = id != null && id.enhancementSupported(), has = s.hasEnh();
+    if (!supported) return recognition(id);
+    app.windowLayout("enhancement-editor", app.shell);
     if (has && !configuring) {
       framing = Boolean.parseBoolean(s.state.getProperty("enh.f"));
       guides = Boolean.parseBoolean(s.state.getProperty("enh.g"));
@@ -45,7 +47,9 @@ final class EnhancementWorkspace {
     }
     VBox photo = new VBox(18);
     Canvas canvas = new Canvas(650, 390);
-    StackPane well = new StackPane(canvas);
+    Label emptyPreview = DesktopUI.text("选择增强模块后显示对应示意", "hint");
+    emptyPreview.setAlignment(Pos.CENTER);
+    StackPane well = new StackPane(canvas, emptyPreview);
     well.getStyleClass().add("photo-well");
     well.setMinHeight(200);
     well.setPrefHeight(420);
@@ -54,9 +58,8 @@ final class EnhancementWorkspace {
     Runnable draw = () -> draw(canvas);
     canvas.widthProperty().addListener((o, a, b) -> draw.run());
     canvas.heightProperty().addListener((o, a, b) -> draw.run());
-    photo
-        .getChildren()
-        .addAll(well, DesktopUI.text("构图示意，非相机实时取景。实际比例、线型与开关在相机 GRK / Fn 菜单设置。", "hint"));
+    Label previewNote = DesktopUI.text("构图示意，非相机实时取景。实际比例、线型与开关在相机 GRK / Fn 菜单设置。", "hint");
+    photo.getChildren().addAll(well, previewNote);
     VBox.setVgrow(well, Priority.ALWAYS);
     VBox options = new VBox(10);
     options.getChildren().add(DesktopUI.text("调整示意样式", "body"));
@@ -105,7 +108,30 @@ final class EnhancementWorkspace {
             });
     options.getChildren().addAll(new HBox(12, lines, colors, masks), alphaHeading, alpha);
     photo.getChildren().add(options);
-    draw.run();
+    Runnable updatePreview =
+        () -> {
+          boolean visual = framing || guides || date;
+          canvas.setVisible(visual);
+          emptyPreview.setVisible(!visual);
+          emptyPreview.setText(film ? "胶片色彩效果请在“胶片风格 / 导入滤镜”中查看" : "选择增强模块后显示对应示意");
+          previewNote.setVisible(visual);
+          previewNote.setManaged(visual);
+          options.setVisible(framing || guides);
+          options.setManaged(framing || guides);
+          for (Node control : new Node[] {lines, colors, alphaHeading, alpha}) {
+            control.setVisible(guides);
+            control.setManaged(guides);
+          }
+          alpha.setDisable(!guides);
+          masks.setVisible(framing);
+          masks.setManaged(framing);
+          previewNote.setText(
+              framing || guides
+                  ? "构图示意，非相机实时取景。实际比例、线型与开关在相机 GRK / Fn 菜单设置。"
+                  : "日期打印示意。实际格式与位置在相机 GRK / Fn 菜单设置。详情需试拍确认。");
+          draw.run();
+        };
+    updatePreview.run();
     boolean matched = has && id != null && id.same(s.enhIdentity());
     String title =
         !supported
@@ -192,22 +218,32 @@ final class EnhancementWorkspace {
                   g.selectedProperty(),
                   filmBox.selectedProperty(),
                   dateBox.selectedProperty()));
-      f.setOnAction(
-          e -> {
-            framing = f.isSelected();
-            draw.run();
-          });
-      g.setOnAction(
-          e -> {
-            guides = g.isSelected();
-            draw.run();
-          });
-      filmBox.setOnAction(e -> film = filmBox.isSelected());
-      dateBox.setOnAction(
-          e -> {
-            date = dateBox.isSelected();
-            draw.run();
-          });
+      f.selectedProperty()
+          .addListener(
+              (o, before, selected) -> {
+                framing = selected;
+                updatePreview.run();
+              });
+      g.selectedProperty()
+          .addListener(
+              (o, before, selected) -> {
+                guides = selected;
+                updatePreview.run();
+              });
+      filmBox
+          .selectedProperty()
+          .addListener(
+              (o, before, selected) -> {
+                film = selected;
+                updatePreview.run();
+              });
+      dateBox
+          .selectedProperty()
+          .addListener(
+              (o, before, selected) -> {
+                date = selected;
+                updatePreview.run();
+              });
       Button looks =
           DesktopUI.button(
               "胶片风格 / 导入滤镜 · " + selectedEffects.size(),
@@ -279,6 +315,28 @@ final class EnhancementWorkspace {
       rail.getChildren().add(DesktopUI.text(s.enhMessage, "hint"));
     rail.getChildren().add(more);
     return DesktopUI.workspace("拍摄增强", photo, rail);
+  }
+
+  Node recognition(CameraIdentity id) {
+    VBox body = new VBox(18);
+    body.getStyleClass().add("home");
+    body.getChildren()
+        .addAll(
+            DesktopUI.text("拍摄增强", "section-title"),
+            DesktopUI.text(id == null ? "等待识别相机" : "当前机型或固件暂不支持拍摄增强", "step-title"),
+            DesktopUI.text(
+                id == null
+                    ? "先连接相机，由程序读取实际型号与固件。识别通过后，再选择需要安装的增强模块。"
+                    : "已识别：" + id.model + " · 固件 " + id.firmware,
+                "hint"),
+            DesktopUI.rule(),
+            DesktopUI.text("可连接相机 Wi-Fi，或通过 USB 只读识别。", "hint"),
+            DesktopUI.button("重新检测相机", app::refreshDevice, true),
+            DesktopUI.button("返回功能首页", app::home, false));
+    app.windowLayout("recognition", body);
+    ScrollPane scroll = DesktopUI.scroll(body);
+    scroll.getStyleClass().add("home-scroll");
+    return scroll;
   }
 
   void draw(Canvas c) {

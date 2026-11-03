@@ -18,7 +18,7 @@ import javafx.stage.Stage;
 import local.grworld.studio.spi.*;
 
 public final class DesktopApp extends Application implements FeatureHost {
-  public static final String VERSION = "0.2.3";
+  public static final String VERSION = "0.2.4";
   DesktopSession session;
   Stage stage;
   BorderPane shell;
@@ -317,7 +317,8 @@ public final class DesktopApp extends Application implements FeatureHost {
     }
     FeatureModule module = features.get(active);
     if (module != null) {
-      if (!active.equals("shutdown-image")) windowLayout(active, shell);
+      if (!active.equals("shutdown-image") && !active.equals("shooting-enhancement"))
+        windowLayout(active, shell);
       page = module.createView(this);
       page.setDisable(busy);
       shell.setCenter(page);

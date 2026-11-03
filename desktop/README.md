@@ -54,3 +54,5 @@ Read the new execution report and check each selected module on the camera. Inte
 Windows fit the display's usable area while retaining native DPI scaling. Settings offer standard and compact sizes; smaller windows use tighter home-page spacing.
 
 Open the card selector after inserting or removing a reader to refresh available cards. Disconnected selections are cleared without restarting the page.
+
+Windows 0.2.4：拍摄增强先识别相机，模块默认不勾选；选择后才显示对应示意和样式控件，取消最后一个模块后收起。已有任务仍显示该任务记录的模块。
