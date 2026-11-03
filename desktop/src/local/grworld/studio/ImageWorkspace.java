@@ -22,6 +22,18 @@ final class ImageWorkspace {
   }
 
   Node view() {
+    CameraIdentity camera = s.context();
+    int route = CameraWorkflowPolicy.route(camera);
+    if (route == CameraWorkflowPolicy.UNVERIFIED
+        || route == CameraWorkflowPolicy.UNSUPPORTED
+        || (route == CameraWorkflowPolicy.WIFI && s.live() == null)) return recognition(camera);
+    // A pending upload belongs to one exact camera, never to a newly detected SD camera.
+    if (s.pending()
+        && (!camera.model.equals(s.state.getProperty("wifi.model"))
+            || !camera.firmware.equals(s.state.getProperty("wifi.firmware")))) {
+      return recognition(camera, "待核对的换图任务属于另一台相机。请重新连接原相机，核对实际关机画面后继续。");
+    }
+    app.windowLayout("shutdown-editor", app.shell);
     boolean task = sdTask();
     byte[] visual = displayImage();
     StackPane image = DesktopUI.photo(visual, "选择一张图片，开始定制关机画面");
@@ -70,10 +82,45 @@ final class ImageWorkspace {
             app.nav("打开图片工程", this::openProject));
     picture.getChildren().add(tools);
     Node rail;
-    if (s.pending()) rail = wifi();
-    else if (CameraWorkflowPolicy.route(s.context()) == CameraWorkflowPolicy.SD) rail = sd.view();
+    if (route == CameraWorkflowPolicy.SD) rail = sd.view();
     else rail = wifi();
     return DesktopUI.workspace("调整关机画面", picture, rail);
+  }
+
+  Node recognition(CameraIdentity camera) {
+    return recognition(
+        camera,
+        CameraWorkflowPolicy.route(camera) == CameraWorkflowPolicy.UNSUPPORTED
+            ? CameraWorkflowPolicy.unsupportedReason(camera)
+            : "连接相机后，程序自动读取实际型号与固件，再显示适用的换图步骤。");
+  }
+
+  Node recognition(CameraIdentity camera, String reason) {
+    VBox body = new VBox(18);
+    body.getStyleClass().add("home");
+    body.getChildren()
+        .addAll(
+            DesktopUI.text("调整关机画面", "section-title"),
+            DesktopUI.text(
+                camera == null || s.live() == null ? "等待识别相机" : "当前相机无法继续换图", "step-title"));
+    if (camera != null)
+      body.getChildren()
+          .add(
+              DesktopUI.text(
+                  (s.live() == null ? "上次识别：" : "已识别：") + camera.model + " · 固件 " + camera.firmware,
+                  "device"));
+    body.getChildren()
+        .addAll(
+            DesktopUI.text(reason, "hint"),
+            DesktopUI.rule(),
+            DesktopUI.text("打开相机并连接电脑。可连接相机 Wi-Fi，或使用 USB 只读识别型号与固件。", "hint"),
+            DesktopUI.button("重新检测相机", app::refreshDevice, true),
+            DesktopUI.button("返回功能首页", app::home, false));
+    body.setMaxWidth(Double.MAX_VALUE);
+    app.windowLayout("recognition", body);
+    ScrollPane scroll = DesktopUI.scroll(body);
+    scroll.getStyleClass().add("home-scroll");
+    return scroll;
   }
 
   VBox wifi() {
@@ -108,8 +155,6 @@ final class ImageWorkspace {
                 : s.network.startsWith("usb:")
                     ? "已通过 USB 只读识别相机。准备拍摄增强 SD 文件可继续使用 USB；上传关机图需要电脑连接相机 Wi-Fi。"
                     : "电脑连接相机 Wi-Fi 后，程序自动读取实际型号与固件。可先选图编辑；识别合格后才开放相机操作。");
-    if (id != null && !id.wifiSupported())
-      v.getChildren().add(DesktopUI.text("此机型／固件不适用 Wi-Fi 关机图。GR3 目前仅支持拍摄增强。", "hint"));
     Button upload =
         DesktopUI.button(
             factory ? "确认并恢复原厂画面" : "确认并替换",
@@ -151,11 +196,7 @@ final class ImageWorkspace {
             false);
     restore.setDisable(!supported);
     v.getChildren()
-        .addAll(
-            restore,
-            DesktopUI.rule(),
-            DesktopUI.text("GR4／GR4 HDF 1.20 使用 Wi-Fi；GR3X 1.70 会自动进入 SD 工作流。", "hint"),
-            DesktopUI.button("检测连接", app::refreshDevice, false));
+        .addAll(restore, DesktopUI.rule(), DesktopUI.button("检测连接", app::refreshDevice, false));
     return v;
   }
 

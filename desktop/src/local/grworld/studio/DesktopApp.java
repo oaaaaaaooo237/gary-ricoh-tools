@@ -18,7 +18,7 @@ import javafx.stage.Stage;
 import local.grworld.studio.spi.*;
 
 public final class DesktopApp extends Application implements FeatureHost {
-  public static final String VERSION = "0.2.2";
+  public static final String VERSION = "0.2.3";
   DesktopSession session;
   Stage stage;
   BorderPane shell;
@@ -28,6 +28,7 @@ public final class DesktopApp extends Application implements FeatureHost {
   ProgressBar progress;
   Node page;
   String active = "home";
+  String windowLayout = "home";
   boolean busy, checking;
   long epoch;
   final ExecutorService io =
@@ -193,6 +194,26 @@ public final class DesktopApp extends Application implements FeatureHost {
     stage.setY(bounds.getMinY() + (bounds.getHeight() - stage.getHeight()) / 2);
   }
 
+  void windowLayout(String mode, Node content) {
+    if (windowLayout.equals(mode)) return;
+    windowLayout = mode;
+    Platform.runLater(
+        () -> {
+          if (!windowLayout.equals(mode)) return;
+          if (mode.equals("recognition")) {
+            shell.applyCss();
+            // Measure the actual explanation, including wrapped model/firmware text.
+            double width = 900;
+            double height =
+                content.prefHeight(width - 40)
+                    + chrome.prefHeight(width)
+                    + shell.getBottom().prefHeight(width)
+                    + 60;
+            resizeWindow(width, Math.max(560, height));
+          } else resizeWindow(1280, 1000);
+        });
+  }
+
   void updateDensity(Scene scene) {
     boolean compact = scene.getWidth() < 1000 || scene.getHeight() < 650;
     if (compact && !shell.getStyleClass().contains("compact")) shell.getStyleClass().add("compact");
@@ -233,6 +254,7 @@ public final class DesktopApp extends Application implements FeatureHost {
   public void home() {
     if (busy) return;
     active = "home";
+    windowLayout("home", shell);
     epoch++;
     VBox content = new VBox(20);
     content.getStyleClass().add("home");
@@ -295,6 +317,7 @@ public final class DesktopApp extends Application implements FeatureHost {
     }
     FeatureModule module = features.get(active);
     if (module != null) {
+      if (!active.equals("shutdown-image")) windowLayout(active, shell);
       page = module.createView(this);
       page.setDisable(busy);
       shell.setCenter(page);
@@ -403,7 +426,10 @@ public final class DesktopApp extends Application implements FeatureHost {
                 device();
                 if (epoch == captured && !active.equals("home") && !active.equals("settings")) {
                   if (error != null && !before.equals(deviceSignature()))
-                    notifyUser("未连接相机。电脑需连接相机 Wi-Fi；图片编辑和本地保存仍可使用。");
+                    notifyUser(
+                        CameraWorkflowPolicy.route(session.context()) == CameraWorkflowPolicy.SD
+                            ? "相机已断开，本次已识别身份保留。SD 流程可通过读卡器继续。"
+                            : "未连接相机。请连接相机后重新检测型号与固件。");
                   if (!busy && !before.equals(deviceSignature())) render();
                 }
               });
