@@ -1,21 +1,25 @@
 .root { -fx-font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif; -fx-font-size:13px; -fx-base:#181818; -fx-background:#282828; -fx-control-inner-background:#222222; -fx-accent:#d8d8d4; -fx-focus-color:#f5f5f3; -fx-faint-focus-color:transparent; -fx-text-fill:#f5f5f3; }
 .label,.check-box,.radio-button { -fx-text-fill:#f5f5f3; }
-.app-bar { -fx-background-color:#080808; -fx-padding:12 24; -fx-spacing:18; -fx-alignment:center-left; }
-.brand { -fx-font-size:18px; -fx-text-fill:#f5f5f3; }
+.app-bar { -fx-background-color:#080808; -fx-padding:16 28; -fx-spacing:18; -fx-alignment:top-left; }
+.brand { -fx-font-size:20px; -fx-text-fill:#f5f5f3; }
+.app-description { -fx-font-size:12.5px; -fx-text-fill:#b5b5b1; -fx-line-spacing:3px; }
 .nav { -fx-background-color:transparent; -fx-text-fill:#b5b5b1; -fx-padding:7 12; -fx-cursor:hand; }
 .nav:selected,.nav:hover { -fx-text-fill:#f5f5f3; -fx-background-color:#282828; }
 .device-bar { -fx-background-color:#181818; -fx-padding:8 24; -fx-alignment:center-left; -fx-spacing:10; }
 .device { -fx-font-size:12.5px; }
 .fixture { -fx-background-color:#40351c; -fx-text-fill:#ffe3a3; -fx-padding:6 24; }
-.home { -fx-padding:32 36; -fx-spacing:16; }
+.home { -fx-padding:24 28; -fx-spacing:20; -fx-background-color:#000000; }
 .lead { -fx-font-size:16px; -fx-text-fill:#e3e3df; -fx-line-spacing:4px; }
 .section-title { -fx-font-size:20px; -fx-text-fill:#f5f5f3; }
 .step-title { -fx-font-size:17px; -fx-text-fill:#f5f5f3; }
 .body { -fx-font-size:13px; -fx-text-fill:#e3e3df; }
 .hint { -fx-font-size:12.5px; -fx-text-fill:#b5b5b1; -fx-line-spacing:4px; }
 .empty { -fx-text-fill:#a8a8a4; -fx-alignment:center; -fx-font-size:14px; }
-.home-entry { -fx-background-color:transparent; -fx-padding:18 4; -fx-border-color:transparent transparent #484848 transparent; -fx-border-width:0 0 1 0; -fx-alignment:center-left; -fx-cursor:hand; }
-.home-entry:hover { -fx-background-color:#303030; }
+.home-entry { -fx-background-color:#000000; -fx-background-radius:0; -fx-padding:20; -fx-border-color:transparent; -fx-border-width:1; -fx-alignment:top-left; -fx-cursor:hand; }
+.home-entry:hover { -fx-background-color:#000000; }
+.home-entry:hover .entry-title { -fx-underline:true; -fx-text-fill:#ffffff; }
+.feature-art { -fx-background-color:#000000; }
+.scroll-pane.home-scroll,.scroll-pane.home-scroll>.viewport { -fx-background-color:#000000; }
 .entry-title { -fx-font-size:18px; }
 .entry-arrow { -fx-font-size:24px; -fx-text-fill:#b5b5b1; }
 .action-rail { -fx-background-color:#181818; -fx-border-color:transparent transparent transparent #484848; -fx-border-width:0 0 0 1; }
@@ -50,8 +54,6 @@
 .choice-row:disabled { -fx-opacity:0.48; }
 .choice-title { -fx-font-size:13px; -fx-text-fill:#f5f5f3; }
 .choice-detail { -fx-font-size:12px; -fx-text-fill:#b9bdb9; }
-.choice-state { -fx-font-size:12px; -fx-text-fill:#b9bdb9; }
-.choice-row:selected .choice-state { -fx-text-fill:#79da9a; }
 .choice-switch { -fx-background-color:#555855; -fx-background-radius:11; }
 .choice-knob { -fx-fill:#ededeb; }
 .choice-row:selected .choice-switch { -fx-background-color:#258648; }

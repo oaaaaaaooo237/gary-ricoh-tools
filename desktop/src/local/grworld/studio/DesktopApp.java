@@ -18,7 +18,7 @@ import javafx.stage.Stage;
 import local.grworld.studio.spi.*;
 
 public final class DesktopApp extends Application implements FeatureHost {
-  public static final String VERSION = "0.2.1";
+  public static final String VERSION = "0.2.2";
   DesktopSession session;
   Stage stage;
   BorderPane shell;
@@ -111,9 +111,14 @@ public final class DesktopApp extends Application implements FeatureHost {
     HBox bar = new HBox(20);
     bar.getStyleClass().add("app-bar");
     Label brand = DesktopUI.text("Gary趣味应用", "brand");
-    Region spacer = new Region();
-    HBox.setHgrow(spacer, Priority.ALWAYS);
-    bar.getChildren().addAll(brand, spacer, nav("功能", this::home), nav("设置", this::settings));
+    Label introduction =
+        DesktopUI.text(
+            "为理光 GR4、GR4 HDF、GR3、GR3X 系列相机定制关机画面，\n提供 XPan 宽幅、构图辅助线、胶片模拟、日期打印与自定义滤镜。",
+            "app-description");
+    VBox identity = new VBox(6, brand, introduction);
+    identity.setMinWidth(0);
+    HBox.setHgrow(identity, Priority.ALWAYS);
+    bar.getChildren().addAll(identity, nav("功能", this::home), nav("设置", this::settings));
     chrome.getChildren().add(bar);
     if (fixture) {
       Label simulation = DesktopUI.text("模拟联机测试 · 相机身份和执行结果为测试数据，不代表实机成功", "fixture");
@@ -139,7 +144,7 @@ public final class DesktopApp extends Application implements FeatureHost {
     DesktopUI.style(scene);
     stage.setTitle("Gary趣味应用 · Windows " + VERSION);
     stage.setScene(scene);
-    resizeWindow(1080, 720);
+    resizeWindow(1280, 1000);
     scene.widthProperty().addListener((o, a, b) -> updateDensity(scene));
     scene.heightProperty().addListener((o, a, b) -> updateDensity(scene));
     updateDensity(scene);
@@ -231,46 +236,50 @@ public final class DesktopApp extends Application implements FeatureHost {
     epoch++;
     VBox content = new VBox(20);
     content.getStyleClass().add("home");
-    Label intro =
-        DesktopUI.text(
-            "为理光 GR4、GR4 HDF、GR3、GR3X 系列相机提供关机画面定制与恢复，以及 XPan 宽幅、构图辅助线、胶片模拟、日期打印和自定义滤镜。", "lead");
-    intro.setMaxWidth(850);
-    content.getChildren().addAll(intro, DesktopUI.text("选择功能", "section-title"), DesktopUI.rule());
+    content.getChildren().add(DesktopUI.text("选择功能", "section-title"));
+    GridPane entries = new GridPane();
+    entries.setHgap(24);
+    entries.setVgap(24);
+    for (int column = 0; column < 2; column++) {
+      ColumnConstraints constraints = new ColumnConstraints();
+      constraints.setPercentWidth(50);
+      constraints.setHgrow(Priority.ALWAYS);
+      entries.getColumnConstraints().add(constraints);
+    }
+    int index = 0;
     for (FeatureModule f : features.values()) {
-      VBox copy =
-          DesktopUI.box(
-              DesktopUI.text(f.title(), "entry-title"), DesktopUI.text(f.description(), "hint"));
-      HBox row = new HBox(25);
-      row.setAlignment(Pos.CENTER_LEFT);
-      copy.setMinWidth(0);
+      Label title = DesktopUI.text(f.title(), "entry-title");
+      Label detail = DesktopUI.text(f.description(), "hint");
+      title.setAlignment(Pos.CENTER);
+      detail.setAlignment(Pos.CENTER);
+      detail.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+      title.setMinHeight(Region.USE_PREF_SIZE);
+      detail.setMinHeight(Region.USE_PREF_SIZE);
+      VBox row = new VBox(12, DesktopUI.featureArt(f.id()), title, detail);
+      row.setAlignment(Pos.TOP_CENTER);
       row.setMinWidth(0);
-      row.setMinHeight(64);
-      row.setPrefHeight(64);
-      row.setMaxHeight(Region.USE_PREF_SIZE);
-      copy.setMaxHeight(Region.USE_PREF_SIZE);
-      HBox.setHgrow(copy, Priority.ALWAYS);
-      Label arrow = DesktopUI.text("›", "entry-arrow");
-      arrow.setMinWidth(Region.USE_PREF_SIZE);
-      arrow.setMaxWidth(Region.USE_PREF_SIZE);
-      arrow.setMaxHeight(Region.USE_PREF_SIZE);
-      row.getChildren().addAll(copy, arrow);
       Button button = new Button();
       button.setGraphic(row);
       button.setMaxWidth(Double.MAX_VALUE);
-      button.setMinHeight(104);
-      button.setPrefHeight(104);
+      button.setMinWidth(0);
+      button.setMinHeight(350);
+      button.setPrefHeight(350);
       button.setMaxHeight(Region.USE_PREF_SIZE);
       button.getStyleClass().add("home-entry");
       button.setAccessibleText(f.title());
       // A graphic's preferred height must use the available width, rather than
       // wrapping against its initial zero-width maximum during the first layout.
       row.prefWidthProperty()
-          .bind(javafx.beans.binding.Bindings.max(200, shell.widthProperty().subtract(136)));
+          .bind(javafx.beans.binding.Bindings.max(200, button.widthProperty().subtract(40)));
+      row.setMouseTransparent(true);
       button.setOnAction(e -> open(f.id()));
-      content.getChildren().add(button);
+      entries.add(button, index % 2, index / 2);
+      index++;
     }
+    content.getChildren().add(entries);
     content.getChildren().add(DesktopUI.text("GR3 仅支持拍摄增强。进入功能后由程序识别实际型号和固件，选择适用的方法。", "hint"));
     page = DesktopUI.scroll(content);
+    page.getStyleClass().add("home-scroll");
     shell.setCenter(page);
     device();
   }
@@ -438,7 +447,7 @@ public final class DesktopApp extends Application implements FeatureHost {
             DesktopUI.rule(),
             DesktopUI.text("显示与记录", "step-title"),
             DesktopUI.button("使用紧凑窗口", () -> resizeWindow(920, 640), false),
-            DesktopUI.button("恢复标准窗口", () -> resizeWindow(1080, 720), false),
+            DesktopUI.button("恢复标准窗口", () -> resizeWindow(1280, 1000), false),
             DesktopUI.button(
                 "查看本次操作记录",
                 () -> DesktopUI.longText(stage, "操作记录", session.state.toString()),

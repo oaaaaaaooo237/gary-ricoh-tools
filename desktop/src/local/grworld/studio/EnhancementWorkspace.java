@@ -127,7 +127,7 @@ final class EnhancementWorkspace {
                     + s.enhIdentity().firmware
                     + "。请连接原相机续办，或为当前相机建立独立任务。"
                 : !has || configuring
-                    ? "选择需要的模块，共用一次 SD 准备。胶片风格与日期样式在相机 GRK / Fn 菜单切换。"
+                    ? "选择需要准备的模块。启用与样式在相机 GRK / Fn 菜单设置。"
                     : !s.enhCardChecked
                         ? "请读取原任务的实际 SD 卡，核实文件与本轮运行报告。本地记录不能代替相机执行结果。"
                         : !s.enhReportChecked
@@ -136,6 +136,15 @@ final class EnhancementWorkspace {
                                 ? "卡文件与本轮报告已核对；实际显示与试拍结果由你记录为正确。"
                                 : "请实际查看相机取景和试拍结果，分别记录已选模块的显示。报告通过不等于实际效果已确认。";
     VBox rail = DesktopUI.actions(title, note);
+    MenuButton more = new MenuButton("更多操作");
+    more.getStyleClass().add("secondary");
+    more.setMaxWidth(Double.MAX_VALUE);
+    more.setMinHeight(38);
+    MenuItem manageItem = new MenuItem("管理／移除增强");
+    manageItem.setOnAction(e -> manage());
+    MenuItem licenseItem = new MenuItem("查看开源许可");
+    licenseItem.setOnAction(e -> app.license());
+    more.getItems().addAll(manageItem, licenseItem);
     if (has && !matched && supported)
       rail.getChildren()
           .add(
@@ -173,12 +182,12 @@ final class EnhancementWorkspace {
           .bind(
               javafx.beans.binding.Bindings.createStringBinding(
                   () ->
-                      "已选 "
+                      "可多选 · "
                           + ((f.isSelected() ? 1 : 0)
                               + (g.isSelected() ? 1 : 0)
                               + (filmBox.isSelected() ? 1 : 0)
                               + (dateBox.isSelected() ? 1 : 0))
-                          + " / 4 项 · 可多选",
+                          + " / 4 项",
                   f.selectedProperty(),
                   g.selectedProperty(),
                   filmBox.selectedProperty(),
@@ -201,7 +210,7 @@ final class EnhancementWorkspace {
           });
       Button looks =
           DesktopUI.button(
-              "选择胶片风格／导入滤镜",
+              "胶片风格 / 导入滤镜 · " + selectedEffects.size(),
               () -> {
                 CameraIdentity live = s.context();
                 if (live == null || !live.enhancementSupported()) {
@@ -222,10 +231,7 @@ final class EnhancementWorkspace {
               },
               false);
       looks.setDisable(!supported);
-      VBox filmOptions =
-          DesktopUI.box(
-              DesktopUI.text("已选 " + selectedEffects.size() + " 个风格；在这里选择内置胶片或导入自己的滤镜。", "hint"),
-              looks);
+      VBox filmOptions = DesktopUI.box(looks);
       filmOptions.visibleProperty().bind(filmBox.selectedProperty());
       filmOptions.managedProperty().bind(filmBox.selectedProperty());
       VBox choices = new VBox(0, f, g, filmBox, dateBox);
@@ -248,9 +254,11 @@ final class EnhancementWorkspace {
                   g.selectedProperty(),
                   filmBox.selectedProperty(),
                   dateBox.selectedProperty()));
-      Button manual = DesktopUI.button("系统无法写卡？手动导出 ZIP", this::manual, false);
+      MenuItem manual = new MenuItem("手动导出 ZIP");
+      manual.setOnAction(e -> manual());
       manual.disableProperty().bind(prepare.disableProperty());
-      rail.getChildren().addAll(prepare, manual);
+      more.getItems().add(0, manual);
+      rail.getChildren().add(prepare);
     } else if (matched) {
       if (!s.enhReportChecked) {
         rail.getChildren().add(cards);
@@ -269,11 +277,7 @@ final class EnhancementWorkspace {
     }
     if (!s.enhMessage.isEmpty() && !(s.enhReportChecked && complete()))
       rail.getChildren().add(DesktopUI.text(s.enhMessage, "hint"));
-    rail.getChildren()
-        .addAll(
-            DesktopUI.rule(),
-            DesktopUI.button("管理／移除增强", this::manage, false),
-            DesktopUI.button("查看开源许可", app::license, false));
+    rail.getChildren().add(more);
     return DesktopUI.workspace("拍摄增强", photo, rail);
   }
 

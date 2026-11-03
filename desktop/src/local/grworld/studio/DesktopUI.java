@@ -18,7 +18,7 @@ final class DesktopUI {
     row.setSelected(selected);
     row.setMaxWidth(Double.MAX_VALUE);
     row.setMinWidth(0);
-    row.setPrefHeight(detail == null || detail.isBlank() ? 46 : 64);
+    row.setPrefHeight(detail == null || detail.isBlank() ? 46 : 56);
     row.setMinHeight(Region.USE_PREF_SIZE);
     row.setMaxHeight(Region.USE_PREF_SIZE);
     row.setAccessibleText(title);
@@ -53,17 +53,6 @@ final class DesktopUI {
     }
     HBox trailing = new HBox(8);
     trailing.setAlignment(Pos.CENTER_RIGHT);
-    if (switchStyle) {
-      Label state = text("", "choice-state");
-      state
-          .textProperty()
-          .bind(
-              javafx.beans.binding.Bindings.when(row.selectedProperty())
-                  .then("已选")
-                  .otherwise("未选"));
-      state.setMinWidth(28);
-      trailing.getChildren().add(state);
-    }
     trailing.getChildren().add(indicator);
     HBox content = new HBox(12, copy, trailing);
     content.setAlignment(Pos.CENTER_LEFT);
@@ -110,7 +99,31 @@ final class DesktopUI {
     ScrollPane s = new ScrollPane(node);
     s.setFitToWidth(true);
     s.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+    s.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
     return s;
+  }
+
+  static StackPane featureArt(String id) {
+    String name =
+        id.equals("shutdown-image") ? "shutdown-screen-v2.png" : "shooting-enhancement-v2.png";
+    ImageView art =
+        new ImageView(
+            new Image(
+                Objects.requireNonNull(DesktopUI.class.getResource("/feature-icons/" + name))
+                    .toExternalForm()));
+    art.setPreserveRatio(true);
+    art.setSmooth(true);
+    art.setViewport(new Rectangle2D(90, 290, 1080, 740));
+    StackPane well = new StackPane(art);
+    art.fitWidthProperty()
+        .bind(javafx.beans.binding.Bindings.min(440, well.widthProperty().subtract(24)));
+    art.fitHeightProperty().bind(well.heightProperty().subtract(12));
+    well.getStyleClass().add("feature-art");
+    well.setMinHeight(200);
+    well.setPrefHeight(220);
+    well.setMaxWidth(Double.MAX_VALUE);
+    well.setMouseTransparent(true);
+    return well;
   }
 
   static void style(Scene scene) {
