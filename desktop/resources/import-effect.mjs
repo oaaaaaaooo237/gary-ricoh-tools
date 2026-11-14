@@ -1,19 +1,19 @@
-// GRKit 1.3.5 MIT converter. No network calls; all input/output stays in the supplied local job.
+// GRKit 1.6.0 MIT converter. No network calls; all input/output stays in the supplied local job.
 import { readFile, writeFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import init, { importLut, haldImage, effectLabel, guessInput } from './grkit_wasm-Bv1y84tD.js';
+import init, { importLut, haldImage, effectLabel, guessInput } from './grkit_wasm-De6gzWck.js';
 
 const job = path.resolve(process.argv[2]);
 try {
   const request = JSON.parse(await readFile(path.join(job, 'request.json'), 'utf8'));
   const here = path.dirname(fileURLToPath(import.meta.url));
-  await init({ module_or_path: await readFile(path.join(here, 'grkit_wasm_bg-Ddg15dz0.wasm')) });
+  await init({ module_or_path: await readFile(path.join(here, 'grkit_wasm_bg-C5t2Tqmz.wasm')) });
   if (request.kind === 'hald') {
     await writeFile(path.join(job, 'hald.png'), haldImage(12));
     await writeFile(path.join(job, 'result.json'), JSON.stringify({ ok: true }));
   } else {
-    if (!['gr3-2.10', 'gr4-1.11', 'gr4-1.20', 'gr4-1.20-0528'].includes(request.target)) throw Error('不支持的色彩目标');
+    if (!['gr3-2.10', 'gr4-1.11', 'gr4-1.20', 'gr4-1.20-0528','gr4-1.21','gr3-2.21'].includes(request.target)) throw Error('不支持的色彩目标');
     if (!['auto', 'standard', 'srgb', 'linear', 'vlog', 'flog', 'flog2', 'flog2c'].includes(request.input)) throw Error('不支持的输入色彩空间');
     if ((await stat(path.join(job, 'input.lut'))).size > 32 * 1024 * 1024) throw Error('滤镜文件超过32MB');
     const catalog = JSON.parse(await readFile(path.join(here, 'catalog', request.target, 'catalog.json'), 'utf8'));

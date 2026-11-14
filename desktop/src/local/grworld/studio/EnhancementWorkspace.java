@@ -145,7 +145,7 @@ final class EnhancementWorkspace {
                         : !s.enhReportChecked ? "在相机执行并读回" : complete() ? "本轮核对完成" : "核对实际拍摄效果";
     String note =
         !supported
-            ? "先连接相机识别型号和固件；GR IV HDF 1.20 也可用 USB 只读识别。识别合格再准备 SD 卡。"
+            ? "先连接相机识别型号和固件；GR IV／GR IV HDF 1.20／1.21 也可用 USB 只读识别。识别合格再准备 SD 卡。"
             : has && !matched
                 ? "当前记录属于 "
                     + s.enhIdentity().model
@@ -558,7 +558,7 @@ final class EnhancementWorkspace {
                     DesktopUI.chooseSave(
                         app.stage,
                         "保存增强手动包",
-                        "GRKit-1.3.5-" + EnhancementPolicy.family(id) + "-modules.zip");
+                        "GRKit-1.6.0-" + EnhancementPolicy.family(id) + "-modules.zip");
                 if (target == null) return;
                 EnhancementSelection selectedModules =
                     new EnhancementSelection(framing, guides, film, date, selectedEffects);

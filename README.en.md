@@ -6,7 +6,7 @@ A Ricoh camera utility with Android and standalone Windows editions: shutdown-im
 
 - Wi-Fi image replacement: GR IV / GR IV HDF 1.20.
 - SD image replacement: GR IIIx standard / Urban / HDF 1.70.
-- Shooting enhancements: powered by [GRKit 1.3.5](https://github.com/ahonn/GRKit/tree/v1.3.5).
+- Shooting enhancements: powered by [GRKit 1.6.0](https://github.com/ahonn/GRKit/tree/v1.6.0).
 
 ## Build
 

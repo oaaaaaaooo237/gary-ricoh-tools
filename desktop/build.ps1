@@ -27,8 +27,10 @@ $images=@{
  'gr3x-urban.jpg'='7a2154a6d24ed5e460d2a918783d593171e399562923da582801186098ffc89f'
 }
 foreach($name in $images.Keys){$file=Join-Path $root "private-assets/$name";if(!(Test-Path -LiteralPath $file) -or (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $images[$name]){throw "Missing or invalid stock resource: $name"};Copy-Item -LiteralPath $file -Destination "$build/input/assets/$name"}
-$packages=@{gr3='b97e9aa3817c2e9a1cc00d538c8f8a0df188c055674fe2a432f544a4a26071ae';gr3x='73efffa80db1078c09f727155a459724e4b6e92b8daa8fbca461bf5d1d5ffaf3';gr4='99401ae517bb4cf702a8a97852fedc0e13e22b899e96791ab84a47f00fb605a9'}
-foreach($family in $packages.Keys){$file=Join-Path $root "dependencies/GRKit-1.3.5-$family.zip";if(!(Test-Path -LiteralPath $file) -or (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $packages[$family]){throw "Fetch pinned GRKit resources first: $family"};Copy-Item $file "$build/input/assets/grkit-$family.zip"}
+$legacy=@{gr3='b97e9aa3817c2e9a1cc00d538c8f8a0df188c055674fe2a432f544a4a26071ae';gr3x='73efffa80db1078c09f727155a459724e4b6e92b8daa8fbca461bf5d1d5ffaf3';gr4='99401ae517bb4cf702a8a97852fedc0e13e22b899e96791ab84a47f00fb605a9'}
+$packages=@{gr3='81a411a81c143cc19adffa9d67d54b8a558eaf68763ee5bb4192db05f2cf364c';gr3x='c9dc61d4312a30a25307e99936d19aedadec73ba144209d36dd67fa6f32d8b4e';gr4='ef3443559839f4f2996202938ceb680fa775bab6ed0bd71247975ba03413676f'}
+foreach($family in $packages.Keys){$file=Join-Path $root "dependencies/GRKit-1.6.0-$family.zip";if(!(Test-Path -LiteralPath $file) -or (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $packages[$family]){throw "Fetch pinned GRKit resources first: $family"};Copy-Item $file "$build/input/assets/grkit-$family.zip"}
+foreach($family in $legacy.Keys){$file=Join-Path $root "dependencies/GRKit-1.3.5-$family.zip";if(!(Test-Path -LiteralPath $file) -or (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $legacy[$family]){throw "Fetch pinned GRKit resources first: $family"};Copy-Item $file "$build/input/assets/grkit-legacy-$family.zip"}
 Copy-Item "$base/resources/*" "$build/classes/" -Recurse -Force
 Copy-Item "$root/LICENSE" "$build/classes/LICENSE"
 Copy-Item "$root/LICENSE" "$build/input/legal/LICENSE"
@@ -39,8 +41,8 @@ Copy-Item $classpath "$build/input/json-20250517.jar"
 $converter=Join-Path $base 'dependencies/effect-converter'
 $converterHashes=@{
  'node.exe'='63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088'
- 'grkit_wasm-Bv1y84tD.js'='5916ab8d11b9c4654a82ca0f52c46c1fcfb6e6f56c602c58dfd27afaad0a6f20'
- 'grkit_wasm_bg-Ddg15dz0.wasm'='8fd19e8ce7330ab13c3b24866bdf67e51fbf1f89b47f3b0e86c2c4427fada5ad'
+ 'grkit_wasm-De6gzWck.js'='a1b44b7be77162aab3e8dca378c825cbd389b1a395146a944b52af667e9daf0f'
+ 'grkit_wasm_bg-C5t2Tqmz.wasm'='6fc94b3eb41ff2a1bf850e2fd4e3ab4e1d574a3e2c6d8721105a4b20388180c3'
 }
 foreach($name in $converterHashes.Keys){if(!(Test-Path (Join-Path $converter $name)) -or (Get-FileHash (Join-Path $converter $name)).Hash.ToLowerInvariant() -ne $converterHashes[$name]){throw 'Run desktop/prepare-effects.ps1 to prepare the pinned offline converter'}}
 New-Item -ItemType Directory -Force "$build/input/converter"|Out-Null

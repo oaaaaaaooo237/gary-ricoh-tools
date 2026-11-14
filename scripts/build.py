@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).parent))
-from fetch_dependencies import PACKAGES
+from fetch_dependencies import LEGACY, PACKAGES, VERSION
 
 def run(*args):
     subprocess.run([str(arg) for arg in args], check=True)
@@ -42,10 +42,14 @@ def build():
             raise RuntimeError("Missing or invalid stock image: private-assets/" + name)
         shutil.copyfile(source, output / "assets" / name)
     for family, expected in PACKAGES.items():
-        source = ROOT / "dependencies" / f"GRKit-1.3.5-{family}.zip"
+        source = ROOT / "dependencies" / f"GRKit-{VERSION}-{family}.zip"
         if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != expected:
             raise RuntimeError("Run scripts/fetch_dependencies.py first")
         shutil.copyfile(source, output / "assets" / f"grkit-{family}.zip")
+        legacy = ROOT / "dependencies" / f"GRKit-1.3.5-{family}.zip"
+        if not legacy.is_file() or hashlib.sha256(legacy.read_bytes()).hexdigest() != LEGACY[family]:
+            raise RuntimeError("Run scripts/fetch_dependencies.py first")
+        shutil.copyfile(legacy, output / "assets" / f"grkit-legacy-{family}.zip")
     sources = sorted((ROOT / "app" / "src").rglob("*.java"))
     run(jdk("javac"), "-encoding", "UTF-8", "-source", "8", "-target", "8",
         "-bootclasspath", str(tools / "core-lambda-stubs.jar") + os.pathsep + str(android),

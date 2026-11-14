@@ -29,11 +29,13 @@ final class DesktopUsbCamera extends DesktopCamera {
         byte[] bytes = DesktopResources.limited(process.getInputStream(), 8192);
         JSONObject report = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
         if (process.exitValue() != 0 || report.has("Error"))
-          throw new IOException("请连接相机 Wi-Fi，或使用 USB 连接 GR IV HDF 1.20");
+          throw new IOException("请连接相机 Wi-Fi，或使用 USB 连接 GR IV／GR IV HDF 1.20／1.21");
         if (!"0x1001".equals(report.optString("ReadOpcode"))
             || report.optInt("CameraWriteRequests", -1) != 0
-            || !"RICOH GR IV HDF".equals(report.optString("Model"))
-            || !"1.20".equals(report.optString("Firmware")))
+            || !("RICOH GR IV".equals(report.optString("Model"))
+                || "RICOH GR IV HDF".equals(report.optString("Model")))
+            || !("1.20".equals(report.optString("Firmware"))
+                || "1.21".equals(report.optString("Firmware"))))
           throw new IOException("USB 身份结果不符合当前支持范围");
         return new Identity(
             report.getString("Model"),

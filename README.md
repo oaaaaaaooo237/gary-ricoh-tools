@@ -6,7 +6,7 @@
 
 - Wi-Fi 换图：GR IV／GR IV HDF 1.20。
 - SD 换图：GR IIIx 普通／Urban／HDF 1.70。
-- 拍摄增强：基于 [GRKit 1.3.5](https://github.com/ahonn/GRKit/tree/v1.3.5)。
+- 拍摄增强：基于 [GRKit 1.6.0](https://github.com/ahonn/GRKit/tree/v1.6.0)，新增 GR IV／HDF 1.21、GR III／HDF 2.21、GR IIIx／HDF／Urban 1.71。更新相机固件后，请用新版应用重新准备 SD 卡。
 
 ## 构建
 

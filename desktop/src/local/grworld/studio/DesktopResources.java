@@ -10,7 +10,7 @@ final class DesktopResources {
     if (!name.matches("[A-Za-z0-9_.-]+")) throw new IOException("资源名称无效");
     try (InputStream in = getClass().getResourceAsStream("/assets/" + name)) {
       if (in == null) throw new IOException("缺少资源：" + name);
-      return limited(in, 4 * 1024 * 1024);
+      return limited(in, EnhancementBundle.ZIP_LIMIT);
     }
   }
 
@@ -45,7 +45,8 @@ final class DesktopResources {
   EnhancementBundle bundle(CameraIdentity id) throws Exception {
     String family = EnhancementPolicy.family(id);
     if (family == null) throw new IOException("当前机型或固件不支持拍摄增强");
-    EnhancementBundle bundle = new EnhancementBundle(family, read("grkit-" + family + ".zip"));
+    EnhancementBundle bundle = new EnhancementBundle(family, read("grkit-" + family + ".zip"))
+        .withLegacy(read("grkit-legacy-" + family + ".zip"));
     if (effects != null) effects.list(id, bundle);
     return bundle;
   }

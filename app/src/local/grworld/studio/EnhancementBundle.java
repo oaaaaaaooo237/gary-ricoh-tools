@@ -7,29 +7,58 @@ import java.util.zip.*;
 
 /** Only pinned, hash-verified upstream assets, never an arbitrary user ZIP. */
 final class EnhancementBundle {
-  static final String VERSION = "1.3.5",
+  static final String VERSION = "1.6.0",
       START = "SCRIPT/STARTUP.TTL",
       LIST = "SCRIPT/GRKIT/PACKAGE.TXT";
+  static final int ZIP_LIMIT = 8 * 1024 * 1024;
   final String family;
   final LinkedHashMap<String, byte[]> all = new LinkedHashMap<>();
   final byte[] license;
+  private EnhancementBundle legacy;
+
+  EnhancementBundle withLegacy(byte[] zip) throws Exception {
+    legacy = new EnhancementBundle(family, zip, true);
+    return this;
+  }
+
+  boolean known(String path, String sha) throws Exception {
+    return matches(all, path, sha) || (legacy != null && matches(legacy.all, path, sha));
+  }
+
+  private static boolean matches(Map<String, byte[]> assets, String path, String sha) throws Exception {
+    byte[] data = assets.get(path);
+    return data != null && sha.equals(EndScreenPolicy.sha256(data));
+  }
+
+  private static String legacyDigest(String f) throws IOException {
+    switch (f) {
+      case "gr3": return "b97e9aa3817c2e9a1cc00d538c8f8a0df188c055674fe2a432f544a4a26071ae";
+      case "gr3x": return "73efffa80db1078c09f727155a459724e4b6e92b8daa8fbca461bf5d1d5ffaf3";
+      case "gr4": return "99401ae517bb4cf702a8a97852fedc0e13e22b899e96791ab84a47f00fb605a9";
+      default: throw new IOException("没有匹配的历史增强包");
+    }
+  }
 
   static String digest(String f) throws IOException {
     switch (f) {
       case "gr3":
-        return "b97e9aa3817c2e9a1cc00d538c8f8a0df188c055674fe2a432f544a4a26071ae";
+        return "81a411a81c143cc19adffa9d67d54b8a558eaf68763ee5bb4192db05f2cf364c";
       case "gr3x":
-        return "73efffa80db1078c09f727155a459724e4b6e92b8daa8fbca461bf5d1d5ffaf3";
+        return "c9dc61d4312a30a25307e99936d19aedadec73ba144209d36dd67fa6f32d8b4e";
       case "gr4":
-        return "99401ae517bb4cf702a8a97852fedc0e13e22b899e96791ab84a47f00fb605a9";
+        return "ef3443559839f4f2996202938ceb680fa775bab6ed0bd71247975ba03413676f";
       default:
         throw new IOException("没有匹配的拍摄增强包");
     }
   }
 
   EnhancementBundle(String family, byte[] zip) throws Exception {
+    this(family, zip, false);
+  }
+
+  EnhancementBundle(String family, byte[] zip, boolean legacy) throws Exception {
     this.family = family;
-    if (!digest(family).equals(EndScreenPolicy.sha256(zip))) throw new IOException("增强资源校验失败");
+    if (!(legacy ? legacyDigest(family) : digest(family)).equals(EndScreenPolicy.sha256(zip))) throw new IOException("增强资源校验失败");
     byte[] notices = null;
     Set<String> seen = new HashSet<>();
     try (ZipInputStream z = new ZipInputStream(new ByteArrayInputStream(zip))) {
@@ -155,7 +184,7 @@ final class EnhancementBundle {
                   + "。胶片风格与日期样式在机内 GRK / Fn 菜单选择。\r\n"
                   + "留卡使用，每次开机重新加载。文件准备不等于机内成功，请实际试拍并核对。\r\n"
                   + "本手动包没有 App 所有权记录；移除请按上游安装指南，不要删除其他工具文件。\r\n"
-                  + "https://github.com/ahonn/GRKit/tree/v1.3.5\r\n")
+                  + "https://github.com/ahonn/GRKit/tree/v1.6.0\r\n")
               .getBytes(StandardCharsets.UTF_8));
       z.closeEntry();
     }

@@ -306,7 +306,7 @@ public final class DesktopDiagnostics {
   static void reports() throws Exception {
     CameraIdentity id = new CameraIdentity("RICOH GR IV HDF", "1.20");
     byte[] report =
-        "GRKit 1.3.5 (gr4-1.20)\nFRAMING  loaded\nGUIDES  loaded\n"
+        "GRKit 1.6.0 (gr4-1.20)\nFRAMING  loaded\nGUIDES  loaded\n"
             .getBytes(StandardCharsets.UTF_8);
     byte[] baseline = "old install 0\n".getBytes(StandardCharsets.UTF_8);
     String hash = EndScreenPolicy.sha256(baseline);

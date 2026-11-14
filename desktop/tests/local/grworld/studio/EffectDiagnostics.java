@@ -23,6 +23,32 @@ public final class EffectDiagnostics {
     throw new AssertionError("Expected rejection");
   }
 
+  static void migrate(Path cardRoot) throws Exception {
+    Files.createDirectories(cardRoot.resolve("GRKIT"));
+    Path settings = cardRoot.resolve("GRKIT/STATE.TXT");
+    Files.writeString(settings, "saved setting");
+    var card = new DesktopCard(cardRoot, true, true);
+    var resources = new DesktopResources();
+    var legacy = new EnhancementBundle("gr4", resources.read("grkit-legacy-gr4.zip"), true);
+    var current = resources.bundle(new CameraIdentity("RICOH GR IV HDF", "1.21"));
+    var choice = EnhancementSelection.basic(true, true);
+    EnhancementDeployment.apply(card, legacy, choice,
+        EnhancementDeployment.inspect(card, legacy, choice, false), () -> {});
+    var upgrade = EnhancementDeployment.inspect(card, current, choice, false);
+    Path framing = cardRoot.resolve("SCRIPT/GRKIT/MODULES/FRAMING.GRM");
+    byte[] original = Files.readAllBytes(framing);
+    Files.writeString(framing, "changed");
+    rejected(() -> EnhancementDeployment.apply(card, current, choice, upgrade, () -> {}));
+    Files.write(framing, original);
+    EnhancementDeployment.apply(card, current, choice, upgrade, () -> {});
+    EnhancementDeployment.verifyReceipt(card, EnhancementDeployment.receipt(card, current), false);
+    require(Files.isRegularFile(cardRoot.resolve("SCRIPT/GRKIT/I636121.BIN")), "1.21 installer deployed");
+    require(Files.readString(settings).equals("saved setting"), "Camera settings kept");
+    var remove = EnhancementDeployment.inspect(card, current, choice, true);
+    EnhancementDeployment.apply(card, current, choice, remove, () -> {});
+    require(Files.readString(settings).equals("saved setting"), "Camera settings kept after removal");
+  }
+
   public static void main(String[] args) throws Exception {
     Path root = Files.createTempDirectory("gary-effects-diagnostics-");
     for (CameraIdentity identity :
@@ -30,7 +56,10 @@ public final class EffectDiagnostics {
             new CameraIdentity("RICOH GR IV", "1.20"),
             new CameraIdentity("RICOH GR IV HDF", "1.20"),
             new CameraIdentity("RICOH GR III", "2.20"),
-            new CameraIdentity("RICOH GR IIIx", "1.70"))) {
+            new CameraIdentity("RICOH GR IIIx", "1.70"),
+            new CameraIdentity("RICOH GR IV HDF", "1.21"),
+            new CameraIdentity("RICOH GR III", "2.21"),
+            new CameraIdentity("RICOH GR IIIx", "1.71"))) {
       DesktopStore store = new DesktopStore(root.resolve(UUID.randomUUID().toString()));
       DesktopResources resources = new DesktopResources();
       DesktopEffects effects = new DesktopEffects(store);
@@ -52,9 +81,9 @@ public final class EffectDiagnostics {
       byte[] corrupt = catalog.get(0).blob.clone();
       corrupt[150] ^= 1;
       rejected(() -> DesktopEffects.decode(corrupt));
-      String rt = EnhancementPolicy.family(identity).equals("gr4") ? "gr4-1.20" : "gr3-2.10";
+      String rt = EnhancementPolicy.runtime(identity);
       byte[] report =
-          ("GRKit 1.3.5 ("
+          ("GRKit 1.6.0 ("
                   + rt
                   + ")\n"
                   + "FRAMING.GRM  loaded\n"
@@ -94,6 +123,7 @@ public final class EffectDiagnostics {
       EnhancementDeployment.apply(card, bundle, choice, removal, () -> {});
       require(!SdCardDeployment.exists(card, EnhancementBundle.START), "Owned startup removed");
     }
+    migrate(root.resolve("migration"));
     DesktopStore store = new DesktopStore(root.resolve("import"));
     Path cube = root.resolve("warm.cube");
     Files.writeString(

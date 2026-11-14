@@ -20,7 +20,7 @@ final class DesktopEffects {
   static String target(CameraIdentity id) throws IOException {
     String family = EnhancementPolicy.family(id);
     if (family == null) throw new IOException("当前机型和固件不支持胶片模块");
-    return family.equals("gr4") ? "gr4-" + id.firmware : "gr3-2.10";
+    return EnhancementPolicy.runtime(id);
   }
 
   static final class Effect {

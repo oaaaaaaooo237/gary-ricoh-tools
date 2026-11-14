@@ -43,12 +43,11 @@ final class EnhancementDeployment {
     for (int i = 3; i < lines.length; i++) {
       String[] fields = lines[i].split("\t");
       if (fields.length != 3
-          || !b.all.containsKey(fields[0])
           || !fields[1].matches("[0-9a-f]{64}")
           || !fields[2].matches("[01]")
           || r.hashes.put(fields[0], fields[1]) != null) throw new IOException("增强文件记录无法核实");
       if (!fields[0].equals(EnhancementBundle.LIST)
-          && !fields[1].equals(EndScreenPolicy.sha256(b.all.get(fields[0]))))
+          && !b.known(fields[0], fields[1]))
         throw new IOException("增强文件版本不受支持");
       if (fields[2].equals("1")) r.owned.add(fields[0]);
     }
@@ -105,7 +104,8 @@ final class EnhancementDeployment {
     if (r != null) verifyReceipt(c, r, false);
     if (remove && r == null) throw new IOException("没有本工具可验证的部署记录，不自动删除现有 GRKit");
     if (exists(c, EnhancementBundle.START)
-        && !equal(c, EnhancementBundle.START, b.all.get(EnhancementBundle.START)))
+        && !equal(c, EnhancementBundle.START, b.all.get(EnhancementBundle.START))
+        && !owns(r, EnhancementBundle.START))
       throw new IOException("卡里有其他启动脚本，不会覆盖");
     byte[] list = exists(c, EnhancementBundle.LIST) ? bytes(c, EnhancementBundle.LIST) : null;
     if (list != null && !exists(c, EnhancementBundle.START))
@@ -115,20 +115,32 @@ final class EnhancementDeployment {
       if (!exists(c, p)) throw new IOException("已有模块清单缺少文件：" + n);
     }
     LinkedHashMap<String, byte[]> files = remove ? new LinkedHashMap<>() : b.files(choice, list);
+    // Keep managed modules retained in the merged selection on the same runtime ABI.
+    if (!remove && r != null)
+      for (String n : EnhancementBundle.list(files.get(EnhancementBundle.LIST))) {
+        String p = "SCRIPT/GRKIT/" + (n.endsWith(".GRM") ? "MODULES/" : "EFFECTS/") + n;
+        if (!files.containsKey(p) && owns(r, p) && b.all.containsKey(p)
+            && !equal(c, p, b.all.get(p))) files.put(p, b.all.get(p));
+      }
     for (Map.Entry<String, byte[]> e : files.entrySet())
       if (!e.getKey().equals(EnhancementBundle.LIST)
           && exists(c, e.getKey())
-          && !equal(c, e.getKey(), e.getValue()))
+          && !equal(c, e.getKey(), e.getValue()) && !owns(r, e.getKey()))
         throw new IOException("已有不同版本文件，保留原内容：" + e.getKey());
     Inspection i = new Inspection(c.key(), r, files, remove);
     i.choice = choice;
     Set<String> paths = new TreeSet<>(b.all.keySet());
+    if (r != null) paths.addAll(r.hashes.keySet());
     paths.add(RECORD);
     paths.add(PAUSED);
     paths.add(TEMP);
     for (String p : paths)
       i.snapshot.put(p, !exists(c, p) ? "-" : EndScreenPolicy.sha256(bytes(c, p)));
     return i;
+  }
+
+  private static boolean owns(Receipt receipt, String path) {
+    return receipt != null && receipt.owned.contains(path);
   }
 
   static void compare(Inspection a, Inspection b) throws IOException {
@@ -225,7 +237,7 @@ final class EnhancementDeployment {
         }
         if (r.baseline != null) put(c, EnhancementBundle.LIST, r.baseline, gate);
         if (!r.owned.contains(EnhancementBundle.START))
-          put(c, TEMP, b.all.get(EnhancementBundle.START), gate);
+          put(c, TEMP, before.get(EnhancementBundle.START), gate);
         gate.check();
         c.delete(RECORD);
         if (exists(c, TEMP)) {
@@ -291,12 +303,18 @@ final class EnhancementDeployment {
   }
 
   static boolean paused(SdCardDeployment.Card c, EnhancementBundle b) throws Exception {
-    return equal(c, PAUSED, b.all.get(EnhancementBundle.START));
+    return recordedStartup(c, b, PAUSED);
   }
 
   static boolean active(SdCardDeployment.Card c, EnhancementBundle b) throws Exception {
-    return exists(c, RECORD)
-        && equal(c, EnhancementBundle.START, b.all.get(EnhancementBundle.START));
+    return recordedStartup(c, b, EnhancementBundle.START);
+  }
+
+  private static boolean recordedStartup(SdCardDeployment.Card c, EnhancementBundle b, String path)
+      throws Exception {
+    Receipt r = receipt(c, b);
+    return r != null && exists(c, path)
+        && r.hashes.get(EnhancementBundle.START).equals(EndScreenPolicy.sha256(bytes(c, path)));
   }
 
   static Inspection inspectResume(SdCardDeployment.Card c, EnhancementBundle b) throws Exception {
@@ -371,9 +389,7 @@ final class EnhancementDeployment {
       return;
     }
     verifyReceipt(c, r, false);
-    if (!equal(c, EnhancementBundle.START, b.all.get(EnhancementBundle.START)))
-      throw new IOException("无法核实增强启动入口");
-    put(c, PAUSED, b.all.get(EnhancementBundle.START), gate);
+    put(c, PAUSED, bytes(c, EnhancementBundle.START), gate);
     gate.check();
     c.delete(EnhancementBundle.START);
     if (exists(c, EnhancementBundle.START)) throw new IOException("增强启动入口没有暂停");
@@ -387,10 +403,11 @@ final class EnhancementDeployment {
     if (r == null) throw new IOException("增强部署记录缺失");
     verifyReceipt(c, r, true);
     if (exists(c, EnhancementBundle.START)) throw new IOException("启动入口仍被任务占用，增强尚未恢复");
-    put(c, TEMP, b.all.get(EnhancementBundle.START), gate);
+    byte[] startup = bytes(c, PAUSED);
+    put(c, TEMP, startup, gate);
     gate.check();
     c.rename(TEMP, "STARTUP.TTL");
-    if (!equal(c, EnhancementBundle.START, b.all.get(EnhancementBundle.START)))
+    if (!equal(c, EnhancementBundle.START, startup))
       throw new IOException("增强入口恢复读回失败");
     gate.check();
     c.delete(PAUSED);

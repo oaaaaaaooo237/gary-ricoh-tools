@@ -18,7 +18,7 @@ import javafx.stage.Stage;
 import local.grworld.studio.spi.*;
 
 public final class DesktopApp extends Application implements FeatureHost {
-  public static final String VERSION = "0.2.4";
+  public static final String VERSION = "0.2.5";
   DesktopSession session;
   Stage stage;
   BorderPane shell;
@@ -502,7 +502,7 @@ public final class DesktopApp extends Application implements FeatureHost {
           "Gary趣味应用 · Windows "
               + VERSION
               + "\n"
-              + "项目代码采用 MIT 许可。拍摄增强基于 ahonn/GRKit1.3.5；保留其作者、贡献者及第三方许可。\n"
+              + "项目代码采用 MIT 许可。拍摄增强基于 ahonn/GRKit1.6.0；保留其作者、贡献者及第三方许可。\n"
               + "https://github.com/ahonn/GRKit\n"
               + "SD 换图研究参考 radium-wang 项目。图片和固件资源不适用本项目 MIT 许可。\n\n"
               + legal

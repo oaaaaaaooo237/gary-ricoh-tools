@@ -4,17 +4,17 @@ $deps=Join-Path $PSScriptRoot 'dependencies'
 $output=Join-Path $deps 'effect-converter'
 New-Item -ItemType Directory -Force $deps,$output|Out-Null
 if(!$Archive){
- $Archive=Join-Path $deps 'GRKit-1.3.5-site.tar.gz'
- if(!(Test-Path -LiteralPath $Archive)){Invoke-WebRequest 'https://github.com/ahonn/GRKit/releases/download/v1.3.5/GRKit-1.3.5-site.tar.gz' -OutFile $Archive}
+ $Archive=Join-Path $deps 'GRKit-1.6.0-site.tar.gz'
+ if(!(Test-Path -LiteralPath $Archive)){Invoke-WebRequest 'https://github.com/ahonn/GRKit/releases/download/v1.6.0/GRKit-1.6.0-site.tar.gz' -OutFile $Archive}
 }
-if((Get-FileHash -LiteralPath $Archive).Hash.ToLowerInvariant() -ne '160be4ddc00645e90e6b10e61f4a3b9164b02d01c5ab589ad14f7ff71dc39f13'){throw 'GRKit release hash mismatch'}
-$stage=Join-Path $deps 'effect-stage'
+if((Get-FileHash -LiteralPath $Archive).Hash.ToLowerInvariant() -ne '4050fbdf6419c3c95c8d0049ba59aea39037b6a53477f05dc8dc524b01f619ba'){throw 'GRKit release hash mismatch'}
+$stage=Join-Path $deps 'effect-stage-1.6.0'
 New-Item -ItemType Directory -Force $stage|Out-Null
-& tar -xf $Archive -C $stage './assets/grkit_wasm-Bv1y84tD.js' './assets/grkit_wasm_bg-Ddg15dz0.wasm' './effects' './THIRD_PARTY_LICENSES.txt'
+& tar -xf $Archive -C $stage './assets/grkit_wasm-De6gzWck.js' './assets/grkit_wasm_bg-C5t2Tqmz.wasm' './effects' './THIRD_PARTY_LICENSES.txt'
 if($LASTEXITCODE){throw 'GRKit converter extraction failed'}
 Copy-Item "$stage/assets/*" $output -Force
 New-Item -ItemType Directory -Force "$output/catalog"|Out-Null
-foreach($target in @('gr3-2.10','gr4-1.11','gr4-1.20','gr4-1.20-0528')){New-Item -ItemType Directory -Force "$output/catalog/$target"|Out-Null;Get-ChildItem -LiteralPath "$stage/effects/$target"|Copy-Item -Destination "$output/catalog/$target" -Recurse -Force}
+foreach($target in @('gr3-2.10','gr4-1.11','gr4-1.20','gr4-1.20-0528','gr4-1.21','gr3-2.21')){New-Item -ItemType Directory -Force "$output/catalog/$target"|Out-Null;Get-ChildItem -LiteralPath "$stage/effects/$target"|Copy-Item -Destination "$output/catalog/$target" -Recurse -Force}
 Copy-Item -LiteralPath "$stage/THIRD_PARTY_LICENSES.txt" -Destination "$output/GRKit-THIRD_PARTY_LICENSES.txt" -Force
 if($NodeDirectory){
  Copy-Item -LiteralPath (Join-Path $NodeDirectory 'node.exe') -Destination "$output/node.exe" -Force

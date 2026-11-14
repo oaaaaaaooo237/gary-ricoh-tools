@@ -34,15 +34,12 @@ final class EnhancementReport {
       String baselineHash)
       throws Exception {
     String text = new String(report, StandardCharsets.UTF_8);
-    Matcher m = Pattern.compile("^GRKit 1\\.3\\.5 \\(([^)]+)\\)").matcher(text);
+    Matcher m = Pattern.compile("\\AGRKit " + Pattern.quote(EnhancementBundle.VERSION)
+        + " \\(([^)]+)\\)\\r?\\n").matcher(text);
     if (!m.find()) throw new IOException("报告版本无法匹配本次增强包");
-    String target = m.group(1), family = EnhancementPolicy.family(id);
-    boolean match =
-        "gr4".equals(family)
-            ? id.firmware.equals("1.11")
-                ? target.equals("gr4-1.11")
-                : target.equals("gr4-1.20") || target.equals("gr4-1.20-0528")
-            : family != null && target.equals("gr3-2.10");
+    String target = m.group(1), expected = EnhancementPolicy.runtime(id);
+    boolean match = target.equals(expected)
+        || ("gr4-1.20".equals(expected) && target.equals("gr4-1.20-0528"));
     if (!match) throw new IOException("报告的运行时与本次机型、固件不匹配");
     if (text.contains("did not install") || text.contains("Safe mode:"))
       throw new IOException("相机报告增强未正常加载，请查看日志");

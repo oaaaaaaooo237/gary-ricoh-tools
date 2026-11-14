@@ -100,8 +100,8 @@ namespace GaryRicohTools {
    }
   }
   internal static void ValidateIdentityModel(string model,string firmware) {
-   if(model!="RICOH GR IV HDF" || firmware!="1.20")
-    throw new InvalidOperationException("USB identity currently supports GR IV HDF 1.20 only");
+   if((model!="RICOH GR IV" && model!="RICOH GR IV HDF") || (firmware!="1.20" && firmware!="1.21"))
+    throw new InvalidOperationException("USB identity currently supports GR IV and GR IV HDF 1.20 / 1.21 only");
   }
   static IValues Command(uint id) {
    if(id!=13 && id!=15 && id!=17)throw new InvalidOperationException("只允许读取和结束读取命令");
